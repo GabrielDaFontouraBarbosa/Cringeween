@@ -221,7 +221,7 @@ footer .ig{color:var(--neon)}
         <h2 class="form-title" id="intro-title">REGRAS DA MORGUE</h2>
         <p class="form-sub">leia rapidinho, criatura estranha</p>
         <ol class="rules">
-          <li><b>2 músicas por pessoa.</b> escolhe bem, porque depois o form some.</li>
+          <li><b>3 músicas por pessoa.</b> escolhe bem, porque depois o form some.</li>
           <li><b>nome e música são obrigatórios.</b> artista e gênero são opcionais, mas ajudam o DJ.</li>
           <li><b>nada de repetir.</b> olha a fila antes — se já tá lá, não entra de novo.</li>
           <li><b>o que toca na festa:</b> <span class="gen">rap de anime</span> <span class="gen">pop</span> <span class="gen">rock / metal</span> <span class="gen">y2k</span> <span class="gen">eletrônica</span></li>
@@ -285,13 +285,13 @@ footer .ig{color:var(--neon)}
           <input id="f-genre-other" class="hidden" name="genreOther" type="text" maxlength="80" placeholder="qual gênero?" style="margin-top:8px">
         </div>
         <button class="submit" type="submit" id="submit-btn">BOTA NA PLAYLIST</button>
-        <p class="note" id="form-note">cada criatura manda até 2 músicas</p>
+        <p class="note" id="form-note">cada criatura manda até 3 músicas</p>
         <button type="button" class="rules-link" id="rules-link">ver regras de novo</button>
       </form>
 
       <div class="done hidden" id="done-box">
         <b>LIMITE ATINGIDO 💀</b>
-        <p>já mandou suas 2, deixa alguém mais ser cringe também</p>
+        <p>já mandou suas 3, deixa alguém mais ser cringe também</p>
       </div>
     </div>
   </section>
@@ -322,7 +322,7 @@ footer .ig{color:var(--neon)}
   var SUPABASE_URL = "https://euuzhfrpkornqphsjspy.supabase.co";
   var SUPABASE_ANON_KEY = "sb_publishable_J4begAC7r89VoL5tD-b0SA_YgaZxqo8";
   // ==================================================================================
-  var LIMIT = 2, MAXLEN = 80, MINE_KEY = "cringeween:mine", INTRO_KEY = "cringeween:intro-seen";
+  var LIMIT = 3, MAXLEN = 80, MINE_KEY = "cringeween:mine", INTRO_KEY = "cringeween:intro-seen";
   var $ = function(id){ return document.getElementById(id); };
   function esc(s){return String(s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
   function clean(s){return String(s||"").replace(/\s+/g," ").trim().slice(0,MAXLEN);}
@@ -349,7 +349,7 @@ footer .ig{color:var(--neon)}
   function remaining(){ return LIMIT - mine.length; }
   function refreshForm(){
     if(remaining() <= 0){ $("song-form").classList.add("hidden"); $("done-box").classList.remove("hidden"); return; }
-    note(mine.length ? "você ainda pode mandar mais " + remaining() + " 🎀" : "cada criatura manda até 2 músicas");
+    note(mine.length ? "você ainda pode mandar mais " + remaining() + " 🎀" : "cada criatura manda até 3 músicas");
   }
 
   function renderList(){
