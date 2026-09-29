@@ -1,0 +1,430 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CRINGEWEEN · sugira sua música</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Poppins:wght@500;600;800&family=VT323&family=Yellowtail&display=swap" rel="stylesheet">
+<style id="app-style">
+:root{
+  --magenta:#FF00A8; --magenta-dk:#A3006B; --neon:#3DFF00; --neon-dk:#1FA300;
+  --preto:#0A0A0A; --branco:#FFFFFF; --lilas:#C77DFF;
+  --display:"Anton","Impact","Archivo Black",sans-serif;
+  --body:"Poppins","Quicksand",system-ui,sans-serif;
+  --mono:"VT323","Courier New",monospace;
+  --script:"Yellowtail","Brush Script MT",cursive;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+html,body{margin:0;background:var(--preto);color:var(--branco);overflow-x:hidden}
+body{
+  font-family:var(--body);font-weight:600;font-size:16px;line-height:1.45;min-height:100%;
+  background:
+    radial-gradient(circle at 0 0, var(--magenta) 0 38%, transparent 70%),
+    radial-gradient(circle at 100% 100%, var(--magenta-dk) 0 30%, transparent 65%),
+    var(--preto);
+  background-attachment:fixed;
+}
+/* halftone overlay nas bordas */
+body::before{
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:radial-gradient(var(--magenta) 28%, transparent 30%);
+  background-size:14px 14px;
+  -webkit-mask-image:radial-gradient(ellipse at center, transparent 42%, #000 85%);
+          mask-image:radial-gradient(ellipse at center, transparent 42%, #000 85%);
+  opacity:.55;
+}
+/* scanlines */
+body::after{
+  content:"";position:fixed;inset:0;pointer-events:none;z-index:50;
+  background:repeating-linear-gradient(0deg, rgba(0,0,0,.18) 0 1px, transparent 1px 3px);
+  mix-blend-mode:multiply;
+}
+.watermark{position:fixed;right:24px;top:22%;width:150px;opacity:.08;z-index:0;pointer-events:none;transform:rotate(12deg)}
+#app-root{position:relative;z-index:1;max-width:560px;margin:0 auto;padding:28px 16px 48px}
+
+/* ===== header / wordmark ===== */
+.hero{position:relative;text-align:center;padding:18px 0 8px}
+.hero .flourish{position:absolute;width:88px;height:88px;color:var(--neon)}
+.hero .flourish.l{left:-6px;top:-6px}
+.hero .flourish.r{right:-6px;top:-6px;transform:scaleX(-1)}
+.skull{font-size:34px;display:block;margin-bottom:2px;filter:drop-shadow(0 0 8px var(--magenta))}
+.wordmark{
+  font-family:var(--display);font-size:clamp(40px,13.5vw,88px);max-width:100%;line-height:.9;margin:0;
+  letter-spacing:.01em;color:var(--neon);
+  -webkit-text-stroke:3px var(--preto);paint-order:stroke fill;
+  text-shadow:4px 4px 0 var(--preto),7px 7px 0 var(--magenta-dk);
+  animation:glitch 4.5s infinite steps(1);
+}
+@keyframes glitch{
+  0%,92%,100%{transform:none}
+  93%{transform:translate(-3px,1px) skewX(-4deg)}
+  95%{transform:translate(3px,-1px)}
+  97%{transform:translate(-1px,0) skewX(3deg)}
+}
+.subscript{
+  font-family:var(--script);font-size:34px;color:var(--magenta);margin:-4px 0 6px;
+  text-shadow:0 0 6px var(--neon),0 0 14px var(--neon-dk);transform:rotate(-4deg);display:inline-block;
+}
+.tagline{font-family:var(--mono);font-size:21px;color:var(--lilas);margin:0}
+.info{
+  display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin:16px 0 4px;
+}
+.info span{
+  background:var(--preto);border:2px solid var(--neon);color:var(--neon);
+  font-family:var(--mono);font-size:19px;padding:2px 10px;line-height:1.2;
+}
+.info span.hot{background:var(--magenta);border-color:var(--preto);color:var(--preto)}
+
+/* stickers */
+.stickers{position:relative;height:0}
+.sticker{
+  position:absolute;z-index:3;font-family:var(--display);font-size:14px;letter-spacing:.06em;
+  background:var(--preto);color:var(--neon);border:3px solid var(--branco);
+  padding:3px 8px;box-shadow:3px 3px 0 var(--magenta-dk);white-space:nowrap;
+}
+.sticker.pink{background:var(--magenta);color:var(--preto)}
+.sticker.lil{background:var(--lilas);color:var(--preto)}
+
+/* ===== janela XP ===== */
+.win{
+  position:relative;margin-top:60px;border:3px solid var(--preto);
+  background:var(--preto);box-shadow:8px 8px 0 var(--magenta-dk),0 0 0 2px var(--neon);
+}
+.win-bar{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  background:linear-gradient(180deg,#ff5cc8 0%,var(--magenta) 45%,var(--magenta-dk) 100%);
+  padding:5px 6px 5px 10px;border-bottom:3px solid var(--preto);
+}
+.win-title{font-family:var(--mono);font-size:19px;color:var(--preto);line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.win-btns{display:flex;gap:4px;flex-shrink:0}
+.win-btns i{
+  display:grid;place-items:center;width:22px;height:20px;font-style:normal;font-family:var(--mono);
+  font-size:17px;background:var(--branco);color:var(--preto);border:2px solid var(--preto);line-height:1;
+}
+.win-btns i.x{background:var(--neon)}
+.win-body{
+  padding:20px 16px 18px;position:relative;
+  background:
+    radial-gradient(var(--magenta-dk) 22%, transparent 24%) 0 0/10px 10px,
+    var(--preto);
+  background-blend-mode:normal;
+}
+.win-body::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,var(--preto) 55%,rgba(10,10,10,.75));pointer-events:none}
+.win-body > *{position:relative}
+.form-title{
+  font-family:var(--display);font-size:34px;line-height:1;margin:0 0 2px;color:var(--neon);
+  -webkit-text-stroke:1px var(--preto);text-shadow:3px 3px 0 var(--magenta-dk);
+}
+.form-sub{font-family:var(--mono);font-size:19px;color:var(--lilas);margin:0 0 16px}
+
+.field{margin-bottom:14px}
+label{display:block;font-size:14px;margin-bottom:5px;color:var(--branco);text-transform:lowercase}
+label .opt{font-family:var(--mono);font-size:17px;color:var(--lilas);margin-left:4px}
+label .req{color:var(--magenta)}
+input,select{
+  width:100%;font:600 16px/1.3 var(--body);color:var(--branco);background:#151515;
+  border:2px solid var(--magenta);border-radius:0;padding:12px 12px;outline:none;
+  -webkit-appearance:none;appearance:none;
+}
+select{
+  background-image:linear-gradient(45deg,transparent 50%,var(--neon) 50%),linear-gradient(135deg,var(--neon) 50%,transparent 50%);
+  background-position:calc(100% - 20px) 50%,calc(100% - 14px) 50%;background-size:6px 6px;background-repeat:no-repeat;padding-right:36px;
+}
+input::placeholder{color:#8d8d8d;font-weight:500}
+input:focus,select:focus{border-color:var(--neon);box-shadow:3px 3px 0 var(--neon-dk)}
+.bad{animation:blink .45s steps(1) 4;border-color:var(--neon)!important}
+@keyframes blink{50%{border-color:var(--magenta);box-shadow:0 0 0 3px var(--neon)}}
+.err{display:block;font-family:var(--mono);font-size:18px;color:var(--neon);min-height:0;margin-top:3px}
+.hidden{display:none!important}
+
+.submit{
+  display:block;width:100%;margin-top:6px;padding:15px 12px;cursor:pointer;
+  font-family:var(--display);font-size:26px;letter-spacing:.04em;color:var(--preto);
+  background:var(--neon);border:3px solid var(--preto);box-shadow:5px 5px 0 var(--magenta);
+  transform:rotate(-1deg);transition:transform .08s;
+}
+.submit:active{transform:translate(3px,3px) rotate(-1deg);box-shadow:2px 2px 0 var(--magenta)}
+.submit:disabled{opacity:.5;cursor:wait}
+.note{font-family:var(--mono);font-size:18px;color:var(--lilas);margin:12px 0 0;text-align:center}
+.note.ok{color:var(--neon)}
+.note.bad-msg{color:var(--magenta)}
+.done{
+  text-align:center;padding:16px 8px;border:3px dashed var(--magenta);
+}
+.done b{display:block;font-family:var(--display);font-size:28px;color:var(--neon);font-weight:400;margin-bottom:4px}
+.done p{margin:0;font-family:var(--mono);font-size:20px;color:var(--lilas)}
+
+/* ===== fila ===== */
+.queue{margin-top:72px}
+.queue-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:14px}
+.queue-head h2{
+  margin:0;font-family:var(--display);font-weight:400;font-size:30px;color:var(--magenta);
+  -webkit-text-stroke:1px var(--preto);text-shadow:3px 3px 0 var(--preto);
+}
+.count{font-family:var(--mono);font-size:21px;background:var(--neon);color:var(--preto);padding:0 8px;border:2px solid var(--preto);transform:rotate(2deg)}
+.cards{list-style:none;margin:0;padding:0;display:grid;gap:14px}
+.card{
+  position:relative;background:var(--preto);border:3px solid var(--branco);
+  padding:12px 14px 10px;box-shadow:4px 4px 0 var(--magenta);
+}
+.card:nth-child(3n+1){transform:rotate(-1.4deg)}
+.card:nth-child(3n+2){transform:rotate(1.1deg);box-shadow:4px 4px 0 var(--neon-dk)}
+.card:nth-child(3n){transform:rotate(-.4deg)}
+.card .song{font-family:var(--display);font-size:22px;line-height:1.1;color:var(--neon);word-break:break-word}
+.card .artist{font-size:15px;color:var(--branco);margin-top:2px;word-break:break-word}
+.card .meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;align-items:center}
+.tag{font-family:var(--mono);font-size:17px;line-height:1.1;padding:1px 7px;border:2px solid var(--magenta);color:var(--magenta)}
+.by{font-family:var(--mono);font-size:17px;color:var(--lilas)}
+.card .pin{position:absolute;top:-12px;right:10px;font-size:20px}
+.empty{font-family:var(--mono);font-size:21px;color:var(--lilas);text-align:center;padding:18px;border:3px dashed var(--lilas)}
+
+footer{margin-top:40px;text-align:center;font-family:var(--mono);font-size:17px;color:var(--lilas);word-break:break-word}
+footer .ig{color:var(--neon)}
+.stars{color:var(--neon);letter-spacing:.3em}
+@media (prefers-reduced-motion:reduce){.wordmark,.bad{animation:none}}
+
+.intro{position:fixed;inset:0;z-index:40;display:flex;align-items:flex-start;justify-content:center;
+  padding:calc(env(safe-area-inset-top,0px) + 16px) 16px calc(env(safe-area-inset-bottom,0px) + 16px);
+  background:rgba(10,10,10,.82);backdrop-filter:blur(3px);overflow-y:auto}
+.intro.off{display:none}
+.intro-win{margin:auto;width:100%;max-width:480px;animation:pop .25s ease-out}
+@keyframes pop{from{transform:scale(.9) rotate(-2deg);opacity:0}to{transform:none;opacity:1}}
+.intro .skull{text-align:center}
+.rules{margin:0 0 16px;padding-left:22px;display:grid;gap:8px;font-size:14.5px}
+.intro .form-title{font-size:30px}
+.intro .win-body{padding-top:14px}
+.rules li::marker{font-family:var(--display);color:var(--neon)}
+.rules b{color:var(--neon);font-weight:800}
+.gen{display:inline-block;font-family:var(--mono);font-size:17px;line-height:1.1;margin:3px 2px 0 0;padding:1px 6px;border:2px solid var(--magenta);color:var(--magenta)}
+.rules-link{display:block;margin:8px auto 0;background:none;border:0;color:var(--lilas);font-family:var(--mono);font-size:18px;text-decoration:underline;cursor:pointer;padding:6px}
+@media (prefers-reduced-motion:reduce){.intro-win{animation:none}}
+</style>
+</head>
+<body>
+<svg class="watermark" viewBox="0 0 100 140" aria-hidden="true"><path fill="#FFFFFF" d="M40 0h20v40h40v20H60v80H40V60H0V40h40z"/></svg>
+<div id="app-root">
+  <div class="intro" id="intro" role="dialog" aria-modal="true" aria-labelledby="intro-title">
+    <div class="win intro-win">
+      <div class="win-bar">
+        <span class="win-title">📜 LEIA_ANTES.txt</span>
+        <span class="win-btns" aria-hidden="true"><i>_</i><i>□</i><i class="x">×</i></span>
+      </div>
+      <div class="win-body">
+        <span class="skull" aria-hidden="true">💀🎀</span>
+        <h2 class="form-title" id="intro-title">REGRAS DA MORGUE</h2>
+        <p class="form-sub">leia rapidinho, criatura estranha</p>
+        <ol class="rules">
+          <li><b>2 músicas por pessoa.</b> escolhe bem, porque depois o form some.</li>
+          <li><b>nome e música são obrigatórios.</b> artista e gênero são opcionais, mas ajudam o DJ.</li>
+          <li><b>nada de repetir.</b> olha a fila antes — se já tá lá, não entra de novo.</li>
+          <li><b>o que toca na festa:</b> <span class="gen">rap de anime</span> <span class="gen">pop</span> <span class="gen">rock / metal</span> <span class="gen">y2k</span> <span class="gen">eletrônica</span></li>
+          <li><b>a fila é pública.</b> todo mundo vê o que você mandou e com qual nome.</li>
+        </ol>
+        <button class="submit" type="button" id="intro-ok">ENTENDI, BORA 🦇</button>
+      </div>
+    </div>
+  </div>
+  <header class="hero">
+    <svg class="flourish l" viewBox="0 0 100 100" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 94C6 50 20 20 60 8"/><path d="M20 60c-14-4-18-18-8-24 9-5 18 4 12 12"/><path d="M36 30c-4-14 6-24 16-18 8 5 2 16-6 12"/><path d="M60 8c10-4 22 0 22 10 0 8-10 10-12 4"/><circle cx="8" cy="94" r="3" fill="currentColor"/><path d="M14 80c10 2 16-4 12-10"/></svg>
+    <svg class="flourish r" viewBox="0 0 100 100" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="M6 94C6 50 20 20 60 8"/><path d="M20 60c-14-4-18-18-8-24 9-5 18 4 12 12"/><path d="M36 30c-4-14 6-24 16-18 8 5 2 16-6 12"/><path d="M60 8c10-4 22 0 22 10 0 8-10 10-12 4"/><circle cx="8" cy="94" r="3" fill="currentColor"/><path d="M14 80c10 2 16-4 12-10"/></svg>
+    <span class="skull" aria-hidden="true">💀🎀</span>
+    <h1 class="wordmark">CRINGEWEEN</h1>
+    <div class="subscript">cringeween</div>
+    <p class="tagline">a festa de crianças estranhas! ✦ volte para 2009</p>
+    <div class="info">
+      <span class="hot">DOM 18.10.2026</span>
+      <span>16h → 22h</span>
+      <span>rua dos geólogos, 185 — taquara</span>
+    </div>
+  </header>
+
+  <div class="stickers" aria-hidden="true">
+    <span class="sticker" style="left:-4px;top:26px;transform:rotate(-7deg)">I SUPPORT ZOMBIES</span>
+    <span class="sticker pink" style="right:-2px;top:-6px;transform:rotate(6deg)">FREAKY FABULOUS ✦</span>
+  </div>
+
+  <section class="win" aria-labelledby="form-title">
+    <div class="win-bar">
+      <span class="win-title">💀 cringe_messenger.exe — nova música</span>
+      <span class="win-btns" aria-hidden="true"><i>_</i><i>□</i><i class="x">×</i></span>
+    </div>
+    <div class="win-body">
+      <h2 class="form-title" id="form-title">SUGIRA SUA MÚSICA</h2>
+      <p class="form-sub">traga seu sangue neon para a taquara</p>
+
+      <form id="song-form" novalidate>
+        <div class="field">
+          <label for="f-name">seu nome <span class="req">*</span></label>
+          <input id="f-name" name="name" type="text" maxlength="80" autocomplete="nickname" placeholder="como te chamam no grupo">
+          <span class="err" id="e-name"></span>
+        </div>
+        <div class="field">
+          <label for="f-song">música <span class="req">*</span></label>
+          <input id="f-song" name="song" type="text" maxlength="80" placeholder="nome da música">
+          <span class="err" id="e-song"></span>
+        </div>
+        <div class="field">
+          <label for="f-artist">artista <span class="opt">(opcional)</span></label>
+          <input id="f-artist" name="artist" type="text" maxlength="80" placeholder="opcional — quem canta?">
+        </div>
+        <div class="field">
+          <label for="f-genre">gênero <span class="opt">(opcional)</span></label>
+          <select id="f-genre" name="genre">
+            <option value="">escolhe aí (ou não)</option>
+            <option>Rap de anime</option><option>Pop</option><option>Rock / Metal</option>
+            <option>Y2K</option><option>Eletrônica</option>
+            <option value="__outro">Outro…</option>
+          </select>
+          <input id="f-genre-other" class="hidden" name="genreOther" type="text" maxlength="80" placeholder="qual gênero?" style="margin-top:8px">
+        </div>
+        <button class="submit" type="submit" id="submit-btn">BOTA NA PLAYLIST</button>
+        <p class="note" id="form-note">cada criatura manda até 2 músicas</p>
+        <button type="button" class="rules-link" id="rules-link">ver regras de novo</button>
+      </form>
+
+      <div class="done hidden" id="done-box">
+        <b>LIMITE ATINGIDO 💀</b>
+        <p>já mandou suas 2, deixa alguém mais ser cringe também</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="stickers" aria-hidden="true">
+    <span class="sticker lil" style="left:8px;top:12px;transform:rotate(-3deg)">MORGUE</span>
+    <span class="sticker" style="right:10px;top:16px;transform:rotate(5deg)">BABY METAL 🦇</span>
+  </div>
+
+  <section class="queue" aria-labelledby="queue-title">
+    <div class="queue-head">
+      <h2 id="queue-title">A FILA DA MORGUE</h2>
+      <span class="count" id="count">00 músicas na fila</span>
+    </div>
+    <ol class="cards" id="cards"></ol>
+  </section>
+
+  <footer>
+    <div class="stars">✦ ✧ ✦</div>
+    CRINGEWEEN · 18.10.2026 · rua dos geólogos, 185 — taquara · <span class="ig">@cringefestrj</span>
+  </footer>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script>
+(function(){
+  "use strict";
+  // ====== CONFIG: cole aqui os dados do seu projeto Supabase (Settings → API) ======
+  var SUPABASE_URL = "https://SEU-PROJETO.supabase.co";
+  var SUPABASE_ANON_KEY = "SUA-ANON-KEY";
+  // ==================================================================================
+  var LIMIT = 2, MAXLEN = 80, MINE_KEY = "cringeween:mine", INTRO_KEY = "cringeween:intro-seen";
+  var $ = function(id){ return document.getElementById(id); };
+  function esc(s){return String(s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
+  function clean(s){return String(s||"").replace(/\s+/g," ").trim().slice(0,MAXLEN);}
+  function norm(s){return clean(s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9 ]/g,"").replace(/\s+/g," ").trim();}
+  function lsGet(k,fb){try{var v=localStorage.getItem(k);return v?JSON.parse(v):fb;}catch(e){return fb;}}
+  function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+  function ssGet(k){try{return sessionStorage.getItem(k);}catch(e){return null;}}
+  function ssSet(k,v){try{sessionStorage.setItem(k,v);}catch(e){}}
+
+  var mine = lsGet(MINE_KEY, []);
+  var rows = [];
+  var busy = false;
+  var sb = null;
+  try { sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); } catch(e) {}
+
+  // ---- tela de regras ----
+  function closeIntro(){ $("intro").classList.add("off"); ssSet(INTRO_KEY,"1"); }
+  $("intro-ok").addEventListener("click", closeIntro);
+  $("rules-link").addEventListener("click", function(){ $("intro").classList.remove("off"); $("intro-ok").focus(); });
+  document.addEventListener("keydown", function(e){ if(e.key==="Escape" && !$("intro").classList.contains("off")) closeIntro(); });
+  if(ssGet(INTRO_KEY)) $("intro").classList.add("off"); else $("intro-ok").focus();
+
+  function note(t,k){ var el=$("form-note"); el.textContent=t; el.className="note"+(k?" "+k:""); }
+  function remaining(){ return LIMIT - mine.length; }
+  function refreshForm(){
+    if(remaining() <= 0){ $("song-form").classList.add("hidden"); $("done-box").classList.remove("hidden"); return; }
+    note(mine.length ? "você ainda pode mandar mais " + remaining() + " 🎀" : "cada criatura manda até 2 músicas");
+  }
+
+  function renderList(){
+    var n = rows.length;
+    $("count").textContent = String(n).padStart(2,"0") + (n===1?" música na fila":" músicas na fila");
+    if(!n){ $("cards").innerHTML = '<li class="empty">ninguém sugeriu nada ainda. seja a primeira criatura estranha 🦇</li>'; return; }
+    var pins = ["💀","🎀","🦇","⭐","🕸️","🖤"];
+    $("cards").innerHTML = rows.map(function(s,i){
+      var meta = (s.genre ? '<span class="tag">'+esc(s.genre)+'</span>' : '') +
+        '<span class="by">sugerido por '+esc(s.name)+(mine.indexOf(s.id)!==-1?" (você)":"")+'</span>';
+      return '<li class="card"><span class="pin" aria-hidden="true">'+pins[i%pins.length]+'</span>'+
+        '<div class="song">'+esc(s.song)+'</div>'+(s.artist?'<div class="artist">'+esc(s.artist)+'</div>':'')+
+        '<div class="meta">'+meta+'</div></li>';
+    }).join("");
+  }
+
+  function load(){
+    if(!sb){ $("cards").innerHTML = '<li class="empty">a fila não carregou 🦇 tenta recarregar a página</li>'; return; }
+    sb.from("sugestoes").select("id,name,song,artist,genre,created_at").order("created_at",{ascending:false}).limit(500)
+      .then(function(r){
+        if(r.error){ $("cards").innerHTML = '<li class="empty">a fila não carregou 🦇 tenta recarregar a página</li>'; return; }
+        rows = r.data || []; renderList();
+      });
+  }
+
+  // tempo real: sugestões dos outros aparecem sozinhas
+  if(sb){
+    sb.channel("fila").on("postgres_changes",{event:"INSERT",schema:"public",table:"sugestoes"},function(p){
+      var row = p.new;
+      if(!rows.some(function(r){ return r.id===row.id; })){ rows.unshift(row); renderList(); }
+    }).subscribe();
+  }
+
+  $("f-genre").addEventListener("change", function(){
+    var o=$("f-genre-other");
+    if(this.value==="__outro"){ o.classList.remove("hidden"); o.focus(); } else o.classList.add("hidden");
+  });
+  ["f-name","f-song"].forEach(function(id){
+    $(id).addEventListener("input", function(){ this.classList.remove("bad"); $("e-"+id.slice(2)).textContent=""; });
+  });
+  function flag(input, errId, msg){ input.classList.remove("bad"); void input.offsetWidth; input.classList.add("bad"); $(errId).textContent=msg; }
+
+  $("song-form").addEventListener("submit", function(ev){
+    ev.preventDefault();
+    if(busy || remaining() <= 0) return;
+    var name=clean($("f-name").value), song=clean($("f-song").value), artist=clean($("f-artist").value);
+    var g=$("f-genre").value, genre = g==="__outro" ? clean($("f-genre-other").value) : clean(g);
+    var ok=true;
+    if(!name){ flag($("f-name"),"e-name","cadê o nome, criatura estranha?"); ok=false; }
+    if(!song){ flag($("f-song"),"e-song","e a música, gênio? 🎀"); ok=false; }
+    if(!ok) return;
+    var key = norm(song);
+    if(rows.some(function(r){ return norm(r.song)===key; })){ flag($("f-song"),"e-song","essa já tá na lista, gênio"); return; }
+    if(!sb){ note("sem conexão com a fila 🦇 recarrega a página","bad-msg"); return; }
+    busy=true; $("submit-btn").disabled=true; note("mandando pra morgue…");
+    sb.from("sugestoes").insert({ name:name, song:song, artist:artist||null, genre:genre||null, song_key:key })
+      .select("id,name,song,artist,genre,created_at").single()
+      .then(function(r){
+        busy=false; $("submit-btn").disabled=false;
+        if(r.error){
+          if(r.error.code==="23505"){ flag($("f-song"),"e-song","essa já tá na lista, gênio"); note(""); return; }
+          note("deu ruim no servidor, tenta de novo daqui a pouco 🦇","bad-msg"); return;
+        }
+        mine.push(r.data.id); lsSet(MINE_KEY, mine);
+        if(!rows.some(function(x){ return x.id===r.data.id; })) rows.unshift(r.data);
+        renderList();
+        $("song-form").reset(); $("f-genre-other").classList.add("hidden");
+        refreshForm();
+        if(remaining() > 0) note("anotado no caderninho da morgue 💀 sua música tá na fila","ok");
+      });
+  });
+
+  refreshForm();
+  load();
+})();
+</script>
+</body>
+</html>
