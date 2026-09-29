@@ -237,8 +237,9 @@ footer .ig{color:var(--neon)}
 .pcard .song{font-family:var(--display);font-size:16px;line-height:1.08;color:var(--neon);word-break:break-word}
 .pcard .artist{font-size:12px;color:var(--branco);margin-top:1px;line-height:1.2;word-break:break-word}
 .pcard .by{display:block;font-family:var(--mono);font-size:15px;color:var(--lilas);margin-top:3px;line-height:1.1}
+.pit-btns{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:12px}
 .shake{
-  display:block;margin:12px auto 0;cursor:pointer;
+  display:block;margin:0;cursor:pointer;
   font-family:var(--display);font-size:18px;letter-spacing:.04em;
   background:var(--preto);color:var(--neon);border:3px solid var(--neon);padding:6px 16px;
 }
@@ -346,7 +347,10 @@ footer .ig{color:var(--neon)}
     </div>
     <div class="pit" id="pit"><span class="pit-hint" id="pit-hint"></span></div>
     <ol class="cards hidden" id="cards"></ol>
-    <button type="button" class="shake" id="shake">CHACOALHAR 💀</button>
+    <div class="pit-btns">
+      <button type="button" class="shake hidden" id="shake">CHACOALHAR 💀</button>
+      <button type="button" class="shake" id="fisica">LIGAR A FÍSICA 💀</button>
+    </div>
   </section>
 
   <footer>
@@ -364,7 +368,7 @@ footer .ig{color:var(--neon)}
   var SUPABASE_ANON_KEY = "sb_publishable_J4begAC7r89VoL5tD-b0SA_YgaZxqo8";
   // =============================
   var SHOW = 10, COOLDOWN = 10000, MAXLEN = 80;
-  var MINE_KEY = "cringeween:mine", INTRO_KEY = "cringeween:intro-seen";
+  var MINE_KEY = "cringeween:mine", INTRO_KEY = "cringeween:intro-seen", PHYS_KEY = "cringeween:fisica";
 
   var $ = function(id){ return document.getElementById(id); };
   function esc(s){return String(s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
@@ -377,16 +381,21 @@ footer .ig{color:var(--neon)}
   function ssSet(k,v){try{sessionStorage.setItem(k,v);}catch(e){}}
 
   // sugestoes deste navegador (guarda o objeto inteiro; aceita o formato antigo so com id)
-  var mine = (lsGet(MINE_KEY, []) || []).map(function(m){
-    return (typeof m === "string") ? {id:m, song:"(enviada antes)", artist:null} : m;
-  });
+  var mineRaw = lsGet(MINE_KEY, []) || [];
   var mineIds = {};
-  mine.forEach(function(m){ if(m && m.id) mineIds[m.id] = true; });
+  mineRaw.forEach(function(m){
+    var id = (typeof m === "string") ? m : (m && m.id);
+    if(id) mineIds[id] = true;
+  });
+  // so lista as que tem os dados salvos (as antigas guardavam so o id)
+  var mine = mineRaw.filter(function(m){ return m && typeof m === "object" && m.song; });
 
   var rows = [], total = 0, busy = false, cooldownUntil = 0, cdTimer = null, sb = null;
   try { sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); } catch(e) {}
   var reduced = false;
   try { reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches; } catch(e){}
+  var saved = lsGet(PHYS_KEY, null);
+  var physOn = (saved === "on") ? true : (saved === "off") ? false : !reduced;
 
   // ---------- tela de regras ----------
   function closeIntro(){ $("intro").classList.add("off"); ssSet(INTRO_KEY,"1"); }
@@ -436,7 +445,7 @@ footer .ig{color:var(--neon)}
       if(ready) return true;
       M = window.Matter;
       pit = document.getElementById("pit");
-      if(!M || !pit || reduced) return false;
+      if(!M || !pit) return false;
       engine = M.Engine.create();
       engine.gravity.y = 0.9;
       makeWalls();
@@ -535,13 +544,20 @@ footer .ig{color:var(--neon)}
     $("cards").classList.remove("hidden");
     renderStatic();
   }
+  function usePhysics(all, row){
+    $("cards").classList.add("hidden");
+    $("pit").classList.remove("hidden");
+    $("shake").classList.remove("hidden");
+    return all ? PHYS.setAll(rows) : PHYS.push(row);
+  }
   function renderQueue(all, row){
     renderCount();
     $("pit-hint").textContent = rows.length
       ? "as 10 últimas — arrasta e joga os cards 🦇"
       : "ninguém sugeriu nada ainda. seja a primeira criatura estranha 🦇";
-    var ok = all ? PHYS.setAll(rows) : PHYS.push(row);
+    var ok = (physOn && window.Matter) ? usePhysics(all, row) : false;
     if(!ok) useStatic();
+    $("fisica").textContent = ok ? "DESLIGAR A F\u00cdSICA" : "LIGAR A F\u00cdSICA \ud83d\udc80";
   }
   function failQueue(){
     useStatic();
@@ -599,6 +615,11 @@ footer .ig{color:var(--neon)}
   }
 
   $("shake").addEventListener("click", function(){ PHYS.shake(); });
+  $("fisica").addEventListener("click", function(){
+    physOn = !physOn;
+    lsSet(PHYS_KEY, physOn ? "on" : "off");
+    renderQueue(true);
+  });
 
   $("song-form").addEventListener("submit", function(ev){
     ev.preventDefault();
