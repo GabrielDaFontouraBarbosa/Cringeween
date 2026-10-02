@@ -43,6 +43,26 @@ Sem isso a fila não carrega e o formulário não envia.
 **Settings → Pages → Source: `main` / `/ (root)`**. Em alguns minutos o site
 fica em `https://gabrieldafontourabarbosa.github.io/Cringeween/`.
 
+## Cringe Hero (jogo de ritmo)
+
+[jogo.html](jogo.html) é um "guitar hero" da festa: menu, seleção de fases, a
+mascote cringe-chan em 3D e um modo admin (`jogo.html#admin`) pra montar fases.
+O botão **JOGAR CRINGE HERO** no topo do [index.html](index.html) leva até ele.
+
+Sem configurar nada, já dá pra jogar a fase **tutorial** (a música é gerada no
+navegador). Pras fases de verdade:
+
+1. No Supabase, roda o [schema-jogo.sql](schema-jogo.sql) no SQL Editor. Ele cria a
+   tabela `fases` e o bucket público `musicas`.
+2. Em **Authentication → Sign In / Providers**, desliga o cadastro público e cria
+   o usuário do admin na mão (**Users → Add user**). As políticas liberam escrita
+   pra qualquer usuário logado, então ninguém mais pode conseguir criar conta.
+3. Abre `jogo.html#admin` → **ENTRAR** → escolhe o mp3 → **IMPORTAR JSON** com o
+   chart da pasta [fases/](fases/) → **TESTAR** → **PUBLICAR**.
+
+Charts prontos: [fases/misery-business.json](fases/misery-business.json)
+(Paramore, 173 bpm, 578 notas, difícil).
+
 ## Sobre a chave ficar exposta
 
 A `anon key` vai pro código e **qualquer um consegue ler** — isso é normal no
