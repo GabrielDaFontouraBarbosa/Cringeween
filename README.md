@@ -58,26 +58,46 @@ navegador). Pras fases de verdade:
 
 1. No Supabase, roda o [schema-jogo.sql](schema-jogo.sql) no SQL Editor. Ele cria a
    tabela `fases` e o bucket público `musicas`.
-2. Em **Authentication → Sign In / Providers**, desliga o cadastro público e cria
-   o usuário do admin na mão (**Users → Add user**). As políticas liberam escrita
-   pra qualquer usuário logado, então ninguém mais pode conseguir criar conta.
-3. Abre `jogo.html#admin` → **ENTRAR** → escolhe o mp3 → **IMPORTAR JSON** com o
+2. Em **Authentication → Sign In / Providers**, desliga o cadastro público por e-mail
+   e cria o usuário do admin na mão (**Users → Add user**, marcando *Auto Confirm User*).
+3. Roda o [schema-placar.sql](schema-placar.sql) e depois o
+   [schema-contas.sql](schema-contas.sql) (lê o topo dele antes: precisa ligar o login
+   anônimo e trocar o e-mail do admin).
+4. Abre `jogo.html#admin` → **ENTRAR** → escolhe o mp3 → **IMPORTAR JSON** com o
    chart da pasta [fases/](fases/) → **TESTAR** → **PUBLICAR**.
 
-Charts prontos: [fases/misery-business.json](fases/misery-business.json)
-(Paramore, 173 bpm, 578 notas sendo 26 longas, difícil).
+Charts prontos na pasta [fases/](fases/): Misery Business (difícil), Die In a Fire,
+In the End, Scary Monsters And Nice Sprites e Alone (médio).
 
-### Nome, placar e moedas
+### Contas, placar e moedas
 
-- Na primeira vez o jogo pergunta o **nome** (até 12 letras, dá pra trocar clicando no
-  nome no canto da tela). Ele aparece no **placar** de cada música, na seleção de fases.
-- Pro placar funcionar, roda o [schema-placar.sql](schema-placar.sql) no SQL Editor do
-  Supabase. Sem ele o jogo funciona normal, só não mostra placar. A pontuação só é enviada
-  quando bate o recorde pessoal do aparelho, e o placar mostra a melhor de cada nome.
-  Não tem como impedir 100% de fraude num jogo 100% no navegador; o admin pode apagar
-  linhas suspeitas na tabela `placar`.
-- Cada fase completa dá **moedas** (acertos + bônus da nota: S 15, A 8, B 4, C 2). Ficam
-  guardadas no aparelho. O botão **LOJA** (skins da cringe-chan) ainda é "em breve".
+- Cada aparelho vira uma **conta anônima** no Supabase (sem e-mail nem senha). Na
+  primeira vez o jogo pergunta o **nome** (até 12 letras, único — ninguém se passa por
+  outro). Dá pra trocar clicando no nome no canto da tela.
+- **Moedas** e **placar** ficam no banco, na tabela `perfis` e `placar`. O navegador
+  nunca escreve direto nelas: no fim da fase ele chama a função `registrar_partida`,
+  que confere a partida contra o chart (número de notas, pontuação máxima possível,
+  tempo mínimo entre partidas), calcula a nota e as moedas e atualiza o placar.
+- Moedas por fase: acertos ÷ 10 + bônus da nota (S 15, A 8, B 4, C 2).
+- A **LOJA** ainda é "em breve", mas o banco já tem o catálogo `skins` e as funções
+  `comprar_skin` / `usar_skin`.
+- Limite: a conta anônima é do navegador. Limpou os dados do site ou trocou de aparelho,
+  vira outro jogador. E num jogo que roda no navegador sempre dá pra forjar uma partida
+  *plausível*; o servidor só barra as impossíveis. O admin pode apagar linhas da `placar`.
+
+### Segurança (quem pode o quê)
+
+| Tabela / função | Qualquer um | Jogador (anônimo) | Admin |
+|---|---|---|---|
+| `sugestoes` | ler (inserir enquanto os pedidos estão abertos) | ler | painel |
+| `fases`, bucket `musicas` | ler as publicadas | ler as publicadas | tudo |
+| `placar` | ler | só via `registrar_partida` | apagar |
+| `perfis` | — | ler o próprio; mudar só via funções | painel |
+| `skins` | ler | comprar via `comprar_skin` | tudo |
+
+"Admin" = usuário que está na tabela `admins` **e** entrou com e-mail. Antes desta
+mudança, qualquer usuário logado podia mexer nas fases; com o login anônimo isso
+viraria qualquer visitante, por isso as policies foram trocadas pelo `is_admin()`.
 
 ### Notas longas e controle
 

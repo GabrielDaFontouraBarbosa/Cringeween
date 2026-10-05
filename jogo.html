@@ -501,9 +501,8 @@ try { if(configured) sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_AN
 var settings = Object.assign({ speed:2, latency:0, res:360, psx:true }, lsGet("cringehero:settings", {}));
 function saveSettings(){ lsSet("cringehero:settings", settings); }
 var records = lsGet("cringehero:records", {});
-var player = String(lsGet("cringehero:player", "")||"");
-var coins = Math.max(0, +lsGet("cringehero:coins", 0) || 0);   // moedas pra comprar skins (loja em breve)
-function addCoins(n){ coins+=n; lsSet("cringehero:coins",coins); paintChip(); }
+// nome e moedas vêm do perfil no Supabase (tabela perfis, ver schema-contas.sql)
+var player = "", coins = 0;
 function cleanName(s){ return String(s||"").replace(/[\u0000-\u001f<>]/g,"").replace(/\s+/g," ").trim().slice(0,12); }
 
 // ---------- helpers de tempo ----------
@@ -550,17 +549,44 @@ function paintChip(){
   c.classList.toggle("on", !!player && (current==="menu"||current==="select"||current==="howto"||current==="credits"));
   c.innerHTML='<b>'+esc(player)+'</b> · <i>🪙 '+coins.toLocaleString("pt-BR")+'</i>';
 }
+// ---------- conta do jogador: login anônimo (uma conta por aparelho) + perfil ----------
+var profile=null, profileUid=null, profileP=null;
+function applyProfile(){ player=profile?profile.nome:""; coins=profile?profile.moedas:0; paintChip(); }
+function loadProfile(){
+  if(!sb) return Promise.resolve(null);
+  if(profileP) return profileP;
+  profileP=sb.auth.getSession().then(function(r){
+    if(r.data.session) return r.data.session;
+    return sb.auth.signInAnonymously().then(function(a){ if(a.error) throw a.error; return a.data.session; });
+  }).then(function(s){
+    profileUid=s.user.id;
+    return sb.from("perfis").select("nome,moedas,skins,skin_atual").eq("id",s.user.id).maybeSingle();
+  }).then(function(r){
+    if(r.error) throw r.error;
+    profile=r.data; applyProfile();
+    if(!player && current!=="title" && current!=="editor" && current!=="play") askName();
+    return profile;
+  }).catch(function(e){ console.warn("conta:",e&&e.message); profile=null; applyProfile(); return null; })
+    .then(function(p){ profileP=null; return p; });
+  return profileP;
+}
 var nameOpen=false;
 function askName(){
+  if(!sb || !profileUid) return;   // sem conta (supabase fora ou login anônimo desligado): joga sem nome
   var m=$("name-modal"), inp=$("name-input"); nameOpen=true; inp.value=player; m.classList.add("on");
   setTimeout(function(){ inp.focus(); inp.select(); },30);
 }
 function saveName(){
-  var n=cleanName($("name-input").value);
+  var n=cleanName($("name-input").value), btn=$("name-ok");
   if(!n){ toast("bota um nome aí 💀",true); return; }
-  player=n; lsSet("cringehero:player",player);
-  nameOpen=false; $("name-modal").classList.remove("on"); sfx("ok"); paintChip();
-  if(current==="select") renderBoard(songs[selIdx]);
+  if(btn.disabled) return; btn.disabled=true;
+  sb.rpc("definir_nome",{ p_nome:n }).then(function(r){
+    btn.disabled=false;
+    if(r.error){ toast(r.error.message,true); return; }
+    profile=r.data; applyProfile();
+    nameOpen=false; $("name-modal").classList.remove("on"); sfx("ok");
+    if(current==="select") renderBoard(songs[selIdx]);
+  });
 }
 $("name-ok").addEventListener("click", saveName);
 $("name-input").addEventListener("keydown", function(e){ if(e.key==="Enter"){ e.preventDefault(); saveName(); } else if(e.key==="Escape" && player){ nameOpen=false; $("name-modal").classList.remove("on"); } e.stopPropagation(); });
@@ -1286,24 +1312,22 @@ function finishGame(){
     var old=records[G.key];
     if(!old || G.score>old.score){ isRec=G.score>0; records[G.key]={ score:G.score, grade:grade, acc:+acc.toFixed(1) }; lsSet("cringehero:records",records); }
   }
-  // moedas: acertos ponderados + bônus da nota (não vale testar no editor)
-  var earned=0, official=G.key && G.returnTo!=="editor";
-  if(official){
-    earned=Math.floor((G.counts.perfect + G.counts.good*0.6 + G.counts.ok*0.2)/10) + ({S:15,A:8,B:4,C:2,D:0})[grade];
-    if(earned>0) addCoins(earned);
-  }
-  $("r-coins").textContent = earned>0 ? "+"+earned+" 🪙 moedas" : "";
-  // placar da música: manda só quando bate o recorde pessoal
-  if(official && isRec && sb && player){
-    var pk=G.key, pscore=G.score, pname=player, pgrade=grade, pacc=+acc.toFixed(1);
-    sb.from("placar").insert({ fase_key:pk, player:pname, score:pscore, grade:pgrade, acc:pacc }).then(function(r){
-      if(r.error){ console.warn("placar:",r.error.message); return; }
+  // moedas + placar: o servidor confere a partida e calcula tudo (registrar_partida)
+  // não vale testar no editor
+  $("r-coins").textContent="";
+  if(G.key && G.returnTo!=="editor" && sb && player){
+    var pk=G.key, mine=G;
+    sb.rpc("registrar_partida",{ p_fase:pk, p_score:G.score, p_perfect:G.counts.perfect, p_good:G.counts.good, p_ok:G.counts.ok, p_miss:G.counts.miss }).then(function(r){
+      if(r.error){ console.warn("partida:",r.error.message); if(G===mine) $("r-coins").textContent=""; return; }
+      var d=r.data||{};
+      coins=d.moedas; if(profile) profile.moedas=coins; paintChip();
       delete boardCache[pk];
-      return fetchBoard(pk).then(function(rows){
-        var pos=rows.findIndex(function(x){ return x.player.toLowerCase()===pname.toLowerCase(); });
-        if(pos>=0 && G && G.key===pk && G.ended) $("r-rec").insertAdjacentHTML("beforeend",'<div class="muted">#'+(pos+1)+' no placar da música 🏆</div>');
-      });
+      if(G!==mine) return;
+      $("r-coins").textContent = d.moedas_ganhas>0 ? "+"+d.moedas_ganhas+" 🪙 moedas" : "";
+      if(d.posicao) $("r-rec").insertAdjacentHTML("beforeend",'<div class="muted">#'+d.posicao+' no placar da música 🏆</div>');
     });
+  } else if(G.key && G.returnTo!=="editor" && sb && profileUid){
+    $("r-coins").textContent="escolhe um nome pra ganhar moedas 🪙";
   }
   $("r-head").textContent = grade==="S" ? "PERFEIÇÃO CRINGE!" : grade==="D" ? "QUE CRINGE…" : "FASE COMPLETA!";
   var gr=$("r-grade"); gr.textContent=grade; gr.classList.remove("stamp"); void gr.offsetWidth; gr.classList.add("stamp");
@@ -1516,7 +1540,7 @@ function pressStart(){
   if(current!=="title") return;
   var a=audioCtx(); if(a && a.state==="suspended") a.resume();
   sfx("start"); show("menu"); mainMenu.set(0,true);
-  if(!player) askName();
+  loadProfile().then(function(){ if(!player && current==="menu") askName(); });
 }
 $("title").addEventListener("click", pressStart);
 var mainMenu=Menu($("menu-list"),{
@@ -1823,15 +1847,26 @@ $("ed-test").addEventListener("click", function(){
 });
 
 // ---------- login do admin ----------
+// a sessão do jogador é anônima: só conta como admin quem entrou com e-mail
+// (e o banco ainda confere a tabela admins em cada escrita)
 var session=null;
+function adminSession(s){ return s && !s.user.is_anonymous ? s : null; }
 function paintAuth(){
   $("auth-state").textContent = session ? "admin: "+(session.user.email||"") : (sb ? "deslogado" : "supabase não configurado");
   $("auth-btn").textContent = session ? "SAIR" : "ENTRAR"; $("auth-btn").disabled = !sb;
   $("ed-publish").disabled = !session; $("ed-delete").disabled = !session || !E.id;
 }
 if(sb){
-  sb.auth.getSession().then(function(r){ session=r.data.session; paintAuth(); });
-  sb.auth.onAuthStateChange(function(_e, s){ session=s; paintAuth(); });
+  sb.auth.getSession().then(function(r){ session=adminSession(r.data.session); paintAuth(); });
+  sb.auth.onAuthStateChange(function(ev, s){
+    session=adminSession(s); paintAuth();
+    // trocou de conta (admin entrou/saiu): recarrega o perfil do jogador
+    var uid=s?s.user.id:null;
+    if(uid!==profileUid && (ev==="SIGNED_IN"||ev==="SIGNED_OUT")){
+      profileUid=uid; profile=null; applyProfile();
+      if(current!=="title") setTimeout(loadProfile,0);
+    }
+  });
 }
 paintAuth();
 $("auth-btn").addEventListener("click", function(){
