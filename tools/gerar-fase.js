@@ -1,10 +1,14 @@
 // CRINGE HERO · gerador de fases
 // analisa o mp3 (BPM, bumbo, caixa, pratos e melodia) e escreve o chart em fases/<nome>.json
 //
-// uso:   node tools/gerar-fase.js "Artista - Música.mp3" [fácil|médio|difícil|insano]
+// uso:   node tools/gerar-fase.js "Artista - Música.mp3" [fácil|médio|difícil|insano] [--bpm=105] [--longas=4]
+//   --bpm=N     BPM conhecido da música (procura só perto dele e não dobra)
+//   --longas=S  uma nota longa a cada ~S segundos (padrão 8; menor = mais notas longas)
 // precisa do ffmpeg instalado. depois: jogo.html#admin → escolhe o mp3 → IMPORTAR JSON → TESTAR → PUBLICAR
 var fs=require("fs"), path=require("path"), cp=require("child_process");
-var SRC=process.argv[2], DIFF=(process.argv[3]||"difícil").toLowerCase();
+var ARGS=process.argv.slice(2).filter(function(a){ return a.indexOf("--")!==0; });
+var OPT={}; process.argv.slice(2).forEach(function(a){ var m=/^--(\w+)=(.+)$/.exec(a); if(m) OPT[m[1]]=+m[2]; });
+var SRC=ARGS[0], DIFF=(ARGS[1]||"difícil").toLowerCase();
 if(!SRC){ console.log('uso: node tools/gerar-fase.js "Artista - Música.mp3" [fácil|médio|difícil|insano]'); process.exit(1); }
 // densidade: fração dos tempos fortes e dos contratempos que viram nota
 var PRESET={ "fácil":[0.45,0.03], "facil":[0.45,0.03], "médio":[0.6,0.1], "medio":[0.6,0.1], "difícil":[0.72,0.22], "dificil":[0.72,0.22], "insano":[0.85,0.45] }[DIFF];
@@ -50,11 +54,12 @@ var env=new Float32Array(nFr); for(var f2=0;f2<nFr;f2++) env[f2]=flux[0][f2]*1.0
 // ---------- BPM por autocorrelação + refino com pente ----------
 function combScore(bpm,off){ var per=60/bpm, s=0, n=0; for(var t=off;t<nFr*HT;t+=per){ var fi=Math.round(t/HT); s+=Math.max(env[fi]||0,env[fi-1]||0,env[fi+1]||0); n++; } return s/n; }
 var best={s:0};
-for(var bpm=70;bpm<=210;bpm+=0.5){ for(var off=0;off<60/bpm;off+=0.005){ var s=combScore(bpm,off); if(s>best.s) best={s:s,bpm:bpm,off:off}; } }
+var LO=OPT.bpm?OPT.bpm-3:70, HI=OPT.bpm?OPT.bpm+3:210;
+for(var bpm=LO;bpm<=HI;bpm+=0.5){ for(var off=0;off<60/bpm;off+=0.005){ var s=combScore(bpm,off); if(s>best.s) best={s:s,bpm:bpm,off:off}; } }
 for(var b2=best.bpm-0.6;b2<=best.bpm+0.6;b2+=0.02){ for(var off2=Math.max(0,best.off-0.03);off2<=best.off+0.03;off2+=0.001){ var s2=combScore(b2,off2); if(s2>best.s) best={s:s2,bpm:b2,off:off2}; } }
 var BPM=Math.round(best.bpm*100)/100, PER=60/BPM;
 // metade/dobro: escolhe a faixa jogável 120–200
-if(BPM<110){ BPM*=2; PER/=2; }
+if(BPM<110 && !OPT.bpm){ BPM*=2; PER/=2; }
 console.log("bpm",BPM.toFixed(2),"offset",best.off.toFixed(3),"score",best.s.toFixed(3));
 
 // ---------- notas ----------
@@ -105,8 +110,8 @@ for(var ni=0;ni<notes.length;ni++){
   }
   ni=nx-1;
 }
-// fica com as melhores: ~1 a cada 8s, sem duas coladas
-var want=Math.round(nFr*HT/8), taken=[], holds=0;
+// fica com as melhores: ~1 a cada 8s (ou --longas), sem duas coladas
+var want=Math.round(nFr*HT/(OPT.longas||8)), taken=[], holds=0;
 cands.sort(function(a,b){ return b.score-a.score; }).forEach(function(c){
   if(holds>=want) return;
   var b0=notes[c.i].b; if(taken.some(function(t){ return Math.abs(t-b0)<6; })) return;
