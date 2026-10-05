@@ -218,6 +218,24 @@ footer .ig{color:var(--neon)}
 .rules-link{display:block;margin:8px auto 0;background:none;border:0;color:var(--lilas);font-family:var(--mono);font-size:18px;text-decoration:underline;cursor:pointer;padding:6px}
 @media (prefers-reduced-motion:reduce){.intro-win{animation:none}}
 
+/* ===== obrigado + lista completa ===== */
+.thanks{text-align:center;padding:14px 10px 4px;border:3px dashed var(--magenta);margin-bottom:14px}
+.thanks-big{font-family:var(--display);font-size:clamp(40px,12vw,64px);line-height:1;color:var(--magenta);-webkit-text-stroke:2px var(--preto);text-shadow:4px 4px 0 var(--neon-dk);transform:rotate(-2deg);margin-bottom:8px}
+.thanks p{margin:0 0 10px;font-family:var(--mono);font-size:21px;color:var(--lilas);line-height:1.2}
+.thanks b{color:var(--neon);font-weight:400}
+.all-win{max-width:560px}
+.win-close{width:26px;height:24px;display:grid;place-items:center;font-family:var(--mono);font-size:20px;line-height:1;background:var(--neon);color:var(--preto);border:2px solid var(--preto);cursor:pointer;padding:0}
+#all-search{margin-bottom:12px}
+.all-list{list-style:none;margin:0;padding:0 4px 0 0;display:grid;gap:6px;max-height:min(58vh,560px);overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--magenta) transparent}
+.all-list li{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;align-items:baseline;border-left:3px solid var(--magenta);padding:4px 0 4px 8px}
+.all-list li:nth-child(2n){border-left-color:var(--neon)}
+.all-list .n{font-family:var(--mono);font-size:18px;color:var(--lilas);min-width:2.2em}
+.all-list .s{font-family:var(--display);font-size:18px;line-height:1.15;color:var(--branco);word-break:break-word}
+.all-list .a{font-family:var(--body);font-size:13px;color:var(--lilas)}
+.all-list .m{grid-column:2;font-family:var(--mono);font-size:16px;color:var(--lilas);line-height:1.1}
+.all-list .m .tag{font-size:15px;margin-right:6px}
+.all-empty{font-family:var(--mono);font-size:20px;color:var(--lilas);text-align:center;padding:14px;border:2px dashed var(--lilas)}
+
 /* ===== suas musicas ===== */
 .mine-box{margin-top:16px;border:3px dashed var(--neon);padding:12px 12px 10px}
 .mine-box h3{margin:0 0 8px;font-family:var(--display);font-weight:400;font-size:21px;color:var(--neon);letter-spacing:.02em}
@@ -261,24 +279,17 @@ footer .ig{color:var(--neon)}
 <body>
 <svg class="watermark" viewBox="0 0 100 140" aria-hidden="true"><path fill="#FFFFFF" d="M40 0h20v40h40v20H60v80H40V60H0V40h40z"/></svg>
 <div id="app-root">
-  <div class="intro" id="intro" role="dialog" aria-modal="true" aria-labelledby="intro-title">
-    <div class="win intro-win">
+  <div class="intro off" id="all-modal" role="dialog" aria-modal="true" aria-labelledby="all-title">
+    <div class="win intro-win all-win">
       <div class="win-bar">
-        <span class="win-title">📜 LEIA_ANTES.txt</span>
-        <span class="win-btns" aria-hidden="true"><i>_</i><i>□</i><i class="x">×</i></span>
+        <span class="win-title">📜 playlist_completa.txt</span>
+        <button type="button" class="win-close" id="all-close" aria-label="fechar">×</button>
       </div>
       <div class="win-body">
-        <span class="skull" aria-hidden="true">💀🎀</span>
-        <h2 class="form-title" id="intro-title">REGRAS DA MORGUE</h2>
-        <p class="form-sub">leia rapidinho, criatura estranha</p>
-        <ol class="rules">
-          <li><b>manda quantas quiser.</b> só espera 10 segundos entre uma e outra.</li>
-          <li><b>nome e música são obrigatórios.</b> artista e gênero são opcionais, mas ajudam o DJ.</li>
-          <li><b>nada de repetir.</b> olha a fila antes — se já tá lá, não entra de novo.</li>
-          <li><b>o que toca na festa:</b> <span class="gen">rap de anime</span> <span class="gen">pop</span> <span class="gen">rock / metal</span> <span class="gen">y2k</span> <span class="gen">eletrônica</span></li>
-          <li><b>a fila é pública.</b> lá embaixo aparecem as <b>10 últimas</b> — e dá pra arrastar e jogar os cards.</li>
-        </ol>
-        <button class="submit" type="button" id="intro-ok">ENTENDI, BORA 🦇</button>
+        <h2 class="form-title" id="all-title">TODAS AS MÚSICAS</h2>
+        <p class="form-sub" id="all-sub">carregando a morgue inteira…</p>
+        <input id="all-search" type="search" placeholder="procurar música, artista ou quem mandou" autocomplete="off" aria-label="procurar na lista">
+        <ol class="all-list" id="all-list"></ol>
       </div>
     </div>
   </div>
@@ -304,42 +315,19 @@ footer .ig{color:var(--neon)}
 
   <section class="win" aria-labelledby="form-title">
     <div class="win-bar">
-      <span class="win-title">💀 cringe_messenger.exe — nova música</span>
+      <span class="win-title">💀 cringe_messenger.exe — pedidos encerrados</span>
       <span class="win-btns" aria-hidden="true"><i>_</i><i>□</i><i class="x">×</i></span>
     </div>
     <div class="win-body">
-      <h2 class="form-title" id="form-title">SUGIRA SUA MÚSICA</h2>
-      <p class="form-sub">traga seu sangue neon para a taquara</p>
+      <h2 class="form-title" id="form-title">PEDIDOS ENCERRADOS</h2>
+      <p class="form-sub">a playlist fechou, criatura estranha</p>
 
-      <form id="song-form" novalidate>
-        <div class="field">
-          <label for="f-name">seu nome <span class="req">*</span></label>
-          <input id="f-name" name="name" type="text" maxlength="80" autocomplete="nickname" placeholder="como te chamam no grupo">
-          <span class="err" id="e-name"></span>
-        </div>
-        <div class="field">
-          <label for="f-song">música <span class="req">*</span></label>
-          <input id="f-song" name="song" type="text" maxlength="80" placeholder="nome da música">
-          <span class="err" id="e-song"></span>
-        </div>
-        <div class="field">
-          <label for="f-artist">artista <span class="opt">(opcional)</span></label>
-          <input id="f-artist" name="artist" type="text" maxlength="80" placeholder="opcional — quem canta?">
-        </div>
-        <div class="field">
-          <label for="f-genre">gênero <span class="opt">(opcional)</span></label>
-          <select id="f-genre" name="genre">
-            <option value="">escolhe aí (ou não)</option>
-            <option>Rap de anime</option><option>Pop</option><option>Rock / Metal</option>
-            <option>Y2K</option><option>Eletrônica</option>
-            <option value="__outro">Outro…</option>
-          </select>
-          <input id="f-genre-other" class="hidden" name="genreOther" type="text" maxlength="80" placeholder="qual gênero?" style="margin-top:8px">
-        </div>
-        <button class="submit" type="submit" id="submit-btn">BOTA NA PLAYLIST</button>
-        <p class="note" id="form-note">manda quantas quiser 🦇</p>
-        <button type="button" class="rules-link" id="rules-link">ver regras de novo</button>
-      </form>
+      <div class="thanks">
+        <div class="thanks-big">OBRIGADO 🖤</div>
+        <p>a todo mundo que mandou música pra morgue. foram <b id="t-total">—</b> músicas de <b id="t-people">—</b> criaturas estranhas.</p>
+        <p>o DJ já tá montando a playlist. te vejo dia <b>18/10</b> na taquara 🦇</p>
+      </div>
+      <button class="submit" type="button" id="all-open">📜 VER TODAS AS MÚSICAS</button>
 
       <div class="mine-box hidden" id="mine-box">
         <h3>SUAS MÚSICAS 🎀</h3>
@@ -355,7 +343,7 @@ footer .ig{color:var(--neon)}
 
   <section class="queue" aria-labelledby="queue-title">
     <div class="queue-head">
-      <h2 id="queue-title">A FILA DA MORGUE</h2>
+      <h2 id="queue-title">AS ÚLTIMAS QUE ENTRARAM</h2>
       <span class="count" id="count">00 músicas na fila</span>
     </div>
     <div class="pit" id="pit"><span class="pit-hint" id="pit-hint"></span></div>
@@ -380,8 +368,8 @@ footer .ig{color:var(--neon)}
   var SUPABASE_URL = "https://euuzhfrpkornqphsjspy.supabase.co";
   var SUPABASE_ANON_KEY = "sb_publishable_J4begAC7r89VoL5tD-b0SA_YgaZxqo8";
   // =============================
-  var SHOW = 10, COOLDOWN = 10000, MAXLEN = 80;
-  var MINE_KEY = "cringeween:mine", INTRO_KEY = "cringeween:intro-seen", PHYS_KEY = "cringeween:fisica";
+  var SHOW = 10, MAXLEN = 80;
+  var MINE_KEY = "cringeween:mine", PHYS_KEY = "cringeween:fisica";
 
   var $ = function(id){ return document.getElementById(id); };
   function esc(s){return String(s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
@@ -390,8 +378,6 @@ footer .ig{color:var(--neon)}
   function pad(n){return String(n).length<2 ? "0"+n : String(n);}
   function lsGet(k,fb){try{var v=localStorage.getItem(k);return v?JSON.parse(v):fb;}catch(e){return fb;}}
   function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
-  function ssGet(k){try{return sessionStorage.getItem(k);}catch(e){return null;}}
-  function ssSet(k,v){try{sessionStorage.setItem(k,v);}catch(e){}}
 
   // sugestoes deste navegador (guarda o objeto inteiro; aceita o formato antigo so com id)
   var mineRaw = lsGet(MINE_KEY, []) || [];
@@ -403,21 +389,34 @@ footer .ig{color:var(--neon)}
   // so lista as que tem os dados salvos (as antigas guardavam so o id)
   var mine = mineRaw.filter(function(m){ return m && typeof m === "object" && m.song && m.song !== "(enviada antes)"; });
 
-  var rows = [], total = 0, busy = false, cooldownUntil = 0, cdTimer = null, sb = null;
+  var rows = [], total = 0, sb = null;
   try { sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); } catch(e) {}
   var reduced = false;
   try { reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches; } catch(e){}
   var saved = lsGet(PHYS_KEY, null);
   var physOn = (saved === "on") ? true : (saved === "off") ? false : !reduced;
 
-  // ---------- tela de regras ----------
-  function closeIntro(){ $("intro").classList.add("off"); ssSet(INTRO_KEY,"1"); }
-  $("intro-ok").addEventListener("click", closeIntro);
-  $("rules-link").addEventListener("click", function(){ $("intro").classList.remove("off"); $("intro-ok").focus(); });
-  document.addEventListener("keydown", function(e){ if(e.key==="Escape" && !$("intro").classList.contains("off")) closeIntro(); });
-  if(ssGet(INTRO_KEY)) $("intro").classList.add("off"); else $("intro-ok").focus();
-
-  function note(t,k){ var el=$("form-note"); el.textContent=t; el.className="note"+(k?" "+k:""); }
+  // ---------- lista completa ----------
+  var allRows = [];
+  function renderAll(){
+    var q = norm($("all-search").value), shown = 0;
+    var html = allRows.map(function(s,i){
+      if(q && norm(s.song+" "+(s.artist||"")+" "+s.name+" "+(s.genre||"")).indexOf(q)===-1) return "";
+      shown++;
+      return '<li><span class="n">'+pad(i+1)+'</span><span class="s">'+esc(s.song)+
+        (s.artist ? ' <span class="a">— '+esc(s.artist)+'</span>' : '')+'</span>'+
+        '<span class="m">'+(s.genre ? '<span class="tag">'+esc(s.genre)+'</span>' : '')+'por '+esc(s.name)+(mineIds[s.id]?" (você)":"")+'</span></li>';
+    }).join("");
+    $("all-list").innerHTML = shown ? html : '<li class="all-empty">'+(allRows.length ? "nada com esse nome 🦇" : "a lista não carregou 🦇")+'</li>';
+    $("all-sub").textContent = q ? shown+" de "+allRows.length+" músicas" : allRows.length+" músicas, na ordem que chegaram";
+  }
+  function openAll(){ $("all-modal").classList.remove("off"); renderAll(); $("all-search").focus(); document.body.style.overflow="hidden"; }
+  function closeAll(){ $("all-modal").classList.add("off"); document.body.style.overflow=""; $("all-open").focus(); }
+  $("all-open").addEventListener("click", openAll);
+  $("all-close").addEventListener("click", closeAll);
+  $("all-modal").addEventListener("click", function(e){ if(e.target===this) closeAll(); });
+  $("all-search").addEventListener("input", renderAll);
+  document.addEventListener("keydown", function(e){ if(e.key==="Escape" && !$("all-modal").classList.contains("off")) closeAll(); });
 
   // ---------- suas musicas ----------
   function renderMine(){
@@ -576,55 +575,22 @@ footer .ig{color:var(--neon)}
     useStatic();
     $("cards").innerHTML = '<li class="empty">a fila não carregou 🦇 tenta recarregar a página</li>';
   }
+  // pedidos encerrados: carrega a lista inteira uma vez só
   function load(){
-    if(!sb){ failQueue(); return; }
-    sb.from("sugestoes").select("id,name,song,artist,genre,created_at", {count:"exact"})
-      .order("created_at",{ascending:false}).limit(SHOW)
+    if(!sb){ failQueue(); renderAll(); return; }
+    sb.from("sugestoes").select("id,name,song,artist,genre,created_at")
+      .order("created_at",{ascending:true}).range(0,4999)
       .then(function(r){
-        if(r.error){ failQueue(); return; }
-        rows = r.data || [];
-        total = (typeof r.count === "number") ? r.count : rows.length;
+        if(r.error){ failQueue(); renderAll(); return; }
+        allRows = r.data || [];
+        total = allRows.length;
+        var people = {}; allRows.forEach(function(s){ people[norm(s.name)] = 1; });
+        $("t-total").textContent = total;
+        $("t-people").textContent = Object.keys(people).length;
+        $("all-open").textContent = "📜 VER TODAS AS " + total + " MÚSICAS";
+        rows = allRows.slice(-SHOW).reverse();
         renderQueue(true);
       });
-  }
-
-  // tempo real
-  if(sb){
-    sb.channel("fila").on("postgres_changes",{event:"INSERT",schema:"public",table:"sugestoes"},function(p){
-      var row = p["new"];
-      if(!row || rows.some(function(r){ return r.id===row.id; })) return;
-      rows.unshift(row); total++;
-      if(rows.length > SHOW) rows.pop();
-      renderQueue(false, row);
-    }).subscribe();
-  }
-
-  // ---------- form ----------
-  $("f-genre").addEventListener("change", function(){
-    var o=$("f-genre-other");
-    if(this.value==="__outro"){ o.classList.remove("hidden"); o.focus(); } else o.classList.add("hidden");
-  });
-  ["f-name","f-song"].forEach(function(id){
-    $(id).addEventListener("input", function(){ this.classList.remove("bad"); $("e-"+id.slice(2)).textContent=""; });
-  });
-  function flag(input, errId, msg){ input.classList.remove("bad"); void input.offsetWidth; input.classList.add("bad"); $(errId).textContent=msg; }
-
-  function tick(){
-    var left = Math.ceil((cooldownUntil - Date.now())/1000);
-    if(left > 0){
-      note("espera " + left + "s pra mandar a próxima 🎀");
-      cdTimer = setTimeout(tick, 250);
-    } else {
-      $("submit-btn").disabled = false;
-      note("manda quantas quiser 🦇");
-      cdTimer = null;
-    }
-  }
-  function beginCooldown(){
-    cooldownUntil = Date.now() + COOLDOWN;
-    $("submit-btn").disabled = true;
-    clearTimeout(cdTimer);
-    cdTimer = setTimeout(tick, 1400);
   }
 
   $("shake").addEventListener("click", function(){ PHYS.shake(); });
@@ -634,47 +600,7 @@ footer .ig{color:var(--neon)}
     renderQueue(true);
   });
 
-  $("song-form").addEventListener("submit", function(ev){
-    ev.preventDefault();
-    if(busy || Date.now() < cooldownUntil) return;
-    var name=clean($("f-name").value), song=clean($("f-song").value), artist=clean($("f-artist").value);
-    var g=$("f-genre").value, genre = g==="__outro" ? clean($("f-genre-other").value) : clean(g);
-    var ok=true;
-    if(!name){ flag($("f-name"),"e-name","cadê o nome, criatura estranha?"); ok=false; }
-    if(!song){ flag($("f-song"),"e-song","e a música, gênio? 🎀"); ok=false; }
-    if(!ok) return;
-    var key = norm(song);
-    if(rows.some(function(r){ return norm(r.song)===key; })){ flag($("f-song"),"e-song","essa já tá na lista, gênio"); return; }
-    if(!sb){ note("sem conexão com a fila 🦇 recarrega a página","bad-msg"); return; }
-
-    busy=true; $("submit-btn").disabled=true; note("mandando pra morgue…");
-    sb.from("sugestoes").insert({ name:name, song:song, artist:artist||null, genre:genre||null, song_key:key })
-      .select("id,name,song,artist,genre,created_at").single()
-      .then(function(r){
-        busy=false;
-        if(r.error){
-          $("submit-btn").disabled=false;
-          if(r.error.code==="23505"){ flag($("f-song"),"e-song","essa já tá na lista, gênio"); note("manda quantas quiser 🦇"); return; }
-          note("deu ruim no servidor, tenta de novo daqui a pouco 🦇","bad-msg"); return;
-        }
-        var d = r.data;
-        mine.push({id:d.id, song:d.song, artist:d.artist});
-        mineIds[d.id] = true;
-        lsSet(MINE_KEY, mine);
-        renderMine();
-        if(!rows.some(function(x){ return x.id===d.id; })){
-          rows.unshift(d); total++;
-          if(rows.length > SHOW) rows.pop();
-          renderQueue(false, d);
-        }
-        $("song-form").reset(); $("f-genre-other").classList.add("hidden");
-        note("anotado no caderninho da morgue 💀","ok");
-        beginCooldown();
-      });
-  });
-
   renderMine();
-  note("manda quantas quiser 🦇");
   load();
 })();
 </script>

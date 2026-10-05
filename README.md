@@ -1,7 +1,11 @@
 # CRINGEWEEN · formulário de músicas
 
-Página única onde a galera sugere músicas pra festa. A fila é pública e
-atualiza ao vivo, sem precisar recarregar.
+Página única onde a galera sugeria músicas pra festa. **Os pedidos estão
+encerrados**: a página agora agradece, mostra as últimas que entraram e tem o
+botão **VER TODAS AS MÚSICAS** com a lista completa (com busca).
+
+Pra fechar também no banco (ninguém consegue inserir nem pela API), roda o
+[fechar-pedidos.sql](fechar-pedidos.sql) no SQL Editor do Supabase.
 
 **Festa:** domingo, 18/10/2026 · 16h–22h · Rua dos Geólogos, 185 — Taquara
 
@@ -61,7 +65,25 @@ navegador). Pras fases de verdade:
    chart da pasta [fases/](fases/) → **TESTAR** → **PUBLICAR**.
 
 Charts prontos: [fases/misery-business.json](fases/misery-business.json)
-(Paramore, 173 bpm, 578 notas, difícil).
+(Paramore, 173 bpm, 578 notas sendo 26 longas, difícil).
+
+### Notas longas e controle
+
+- Nota com `"d"` no chart (duração em tempos) é **nota longa**: segura até o
+  rastro acabar. No editor: clica e **arrasta pro lado**; gravando, é só segurar a tecla.
+- Controle (Xbox/PlayStation/genérico): pistas = LT/←, LB/↑, RB/Y, RT/B.
+  Nos menus ↑↓ escolhe, A confirma, B volta, START pausa.
+
+### Gerar fase nova de um mp3
+
+Precisa do [ffmpeg](https://ffmpeg.org) e do Node.
+
+```
+node tools/gerar-fase.js "Artista - Música.mp3" difícil
+```
+
+Detecta o BPM, alinha o tempo e escreve `fases/<musica>.json` (dificuldade:
+`fácil`, `médio`, `difícil` ou `insano`). Depois é só importar no admin.
 
 ## Sobre a chave ficar exposta
 

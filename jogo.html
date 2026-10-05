@@ -261,6 +261,15 @@ input[type=file]{padding:7px}
       <h3>CONTROLES</h3>
       <div class="keys"><span class="key" style="background:#3DFF00">D</span><span class="key" style="background:#FF00A8">F</span><span class="key" style="background:#C77DFF">J</span><span class="key" style="background:#FFE600">K</span></div>
       <p>as notas descem pela pista. aperta a tecla da cor certa quando a nota encostar no anel lá embaixo. no celular é só tocar na pista.</p>
+      <p><b>notas longas:</b> as que têm um rastro atrás você <b>segura</b> até o rastro acabar. quanto mais segura, mais ponto.</p>
+      <h3>🎮 CONTROLE</h3>
+      <div class="judges">
+        <span style="color:#3DFF00">pista 1</span><span>LT ou ←</span>
+        <span style="color:#FF00A8">pista 2</span><span>LB ou ↑</span>
+        <span style="color:#C77DFF">pista 3</span><span>RB ou Y / △</span>
+        <span style="color:#FFE600">pista 4</span><span>RT ou B / ○</span>
+      </div>
+      <p>nos menus: ↑↓ escolhe, A/✕ confirma, B/○ volta, START pausa. é só conectar o controle e apertar qualquer botão.</p>
       <h3>PONTUAÇÃO</h3>
       <div class="judges">
         <span style="color:#3DFF00">PERFEITO!</span><span>300 pts</span>
@@ -399,7 +408,7 @@ input[type=file]{padding:7px}
 
     <div class="grid-shell"><canvas id="grid"></canvas></div>
     <input type="range" id="ed-scroll" min="0" max="1000" value="0" style="width:100%;margin-top:6px" aria-label="rolar a grade">
-    <p class="hint">clique = põe/tira nota · clique direito = apaga · clique na régua = pula pra lá · roda do mouse rola · ctrl+roda dá zoom · <span class="kbd">espaço</span> play · <span class="kbd">ctrl+z</span> desfaz · gravando: <span class="kbd">D</span><span class="kbd">F</span><span class="kbd">J</span><span class="kbd">K</span> no ritmo</p>
+    <p class="hint">clique = põe/tira nota · <b>clica e arrasta pro lado = nota longa</b> · clique direito = apaga · clique na régua = pula pra lá · roda do mouse rola · ctrl+roda dá zoom · <span class="kbd">espaço</span> play · <span class="kbd">ctrl+z</span> desfaz · gravando: <span class="kbd">D</span><span class="kbd">F</span><span class="kbd">J</span><span class="kbd">K</span> no ritmo</p>
 
     <div class="row" style="margin-top:16px">
       <button class="btn" id="ed-test">🎮 TESTAR</button>
@@ -929,13 +938,17 @@ function mult(){ return 1+Math.min(3,Math.floor(G.combo/10)); }
 function startGame(chart, returnTo, key){
   if(G) stopGame();
   stopPreview();
-  var notes = chart.notes.map(function(n){ return { lane:n.l, time:beatToTime(n.b, chart.bpm, chart.offset), hit:null }; })
-    .sort(function(a,b){ return a.time-b.time; });
+  // nota longa: "d" = duração em tempos (só conta a partir de meio tempo)
+  var notes = chart.notes.map(function(n){
+    var d=+n.d||0;
+    return { lane:n.l, time:beatToTime(n.b, chart.bpm, chart.offset), end:d>=0.5?beatToTime(n.b+d, chart.bpm, chart.offset):0, hit:null, holding:false, broken:false, done:false };
+  }).sort(function(a,b){ return a.time-b.time; });
   var audio = new Audio(); audio.preload="auto"; audio.crossOrigin="anonymous"; audio.src = chart.audioUrl;
   G = { chart:chart, key:key||null, notes:notes, audio:audio, returnTo:returnTo, score:0, combo:0, maxCombo:0,
         counts:{perfect:0,good:0,ok:0,miss:0}, judged:0, accPts:0, flashes:[0,0,0,0], burst:[0,0,0,0], held:[false,false,false,false],
+        holds:[null,null,null,null], holdTotal:notes.filter(function(n){ return n.end; }).length, holdDone:0, lastNow:0,
         judge:null, parts:[], lastAT:0, lastPerf:0, lastFrame:performance.now(), raf:0, running:false, paused:false, ended:false,
-        endTime:notes.length?notes[notes.length-1].time:0, go:null };
+        endTime:notes.reduce(function(m,n){ return Math.max(m,n.end||n.time); },0), go:null };
   $("hud-song").textContent = chart.title + (chart.artist?" — "+chart.artist:"");
   $("hud-prog").style.width="0%";
   $("results").classList.add("off"); $("pause").classList.add("off"); $("countdown").classList.remove("off");
@@ -976,11 +989,45 @@ function loop(){
     var nt=G.notes[i]; if(nt.hit) continue;
     if(nt.time < now - WIN.ok){ nt.hit="miss"; registerJudge("miss", nt.lane); } else if(nt.time > now) break;
   }
+  // notas longas: pontua enquanto segura, fecha quando o rastro acaba
+  var dtSong=Math.max(0,Math.min(0.1,now-G.lastNow)); G.lastNow=now;
+  for(var l=0;l<LANES;l++){
+    var h=G.holds[l]; if(!h) continue;
+    if(now>=h.end){ endHold(l,true); continue; }
+    G.score += dtSong*G.chart.bpm/60*HOLD_PTS*mult();
+    G.burst[l]=Math.max(G.burst[l],0.55);
+    if(Math.random()<0.35) spark(l,"hold");
+  }
+  if(G.holds.some(Boolean)) updateHud();
   drawStage(now);
   var dur=G.audio.duration;
   if(dur && isFinite(dur)) $("hud-prog").style.width=Math.min(100,G.audio.currentTime/dur*100)+"%";
   if(!G.ended && G.notes.length && now > G.endTime + 2 && dur && now > dur - 0.1){ finishGame(); return; }
   G.raf = requestAnimationFrame(loop);
+}
+
+var HOLD_PTS = 60;      // pontos por tempo segurado (antes do multiplicador)
+var HOLD_GRACE = 0.12;  // soltar até 120ms antes do fim ainda conta como completa
+function endHold(l, ok){
+  var h=G.holds[l]; if(!h) return;
+  G.holds[l]=null; h.holding=false;
+  if(ok){ h.done=true; G.holdDone++; G.score+=HOLD_PTS*mult(); spark(l,"perfect"); }
+  else { h.broken=true; G.flashes[l]=Math.max(G.flashes[l],0.35); }
+  updateHud();
+}
+// rastro da nota longa: faixa em perspectiva da cabeça até o fim
+function tail(c,g,l,z0,z1,state){
+  z0=Math.max(-0.2,z0); z1=Math.min(1.02,z1); if(z1<=z0) return;
+  var STEPS=10, w=0.15, col=state==="hold"?LANE_COLORS[l]:state==="dead"?"rgba(120,110,130,.45)":hexA(LANE_COLORS[l],0.6);
+  c.beginPath();
+  for(var i=0;i<=STEPS;i++){ var p=proj(g,z0+(z1-z0)*i/STEPS); c[i?"lineTo":"moveTo"](lx(g,l+0.5-w,p.s),p.y); }
+  for(var j=STEPS;j>=0;j--){ var q=proj(g,z0+(z1-z0)*j/STEPS); c.lineTo(lx(g,l+0.5+w,q.s),q.y); }
+  c.closePath(); c.fillStyle=col; c.fill();
+  c.lineWidth=2; c.strokeStyle=state==="dead"?"rgba(0,0,0,.4)":"#0a0a0a"; c.stroke();
+  if(state==="hold"){   // brilho que tremula no centro enquanto segura
+    var pe=proj(g,z1), pb=proj(g,z0), wob=Math.sin(performance.now()/40)*2;
+    c.strokeStyle="rgba(255,255,255,.8)"; c.lineWidth=3; c.beginPath(); c.moveTo(lx(g,l+0.5,pb.s)+wob,pb.y); c.lineTo(lx(g,l+0.5,pe.s),pe.y); c.stroke();
+  }
 }
 
 function gem(c,x,y,rx,l,a){
@@ -1049,8 +1096,14 @@ function drawStage(now){
   // notas
   var look2=lookAhead();
   for(var i=0;i<G.notes.length;i++){
-    var n=G.notes[i]; if(n.hit) continue;
-    var z2=(n.time-now)/look2; if(z2>1.02) break; if(z2<-0.2) continue;
+    var n=G.notes[i], z2=(n.time-now)/look2; if(z2>1.02) break;
+    if(n.end && !n.done && n.end>now-0.2){
+      var ze=(n.end-now)/look2;
+      if(n.holding) tail(c,g,n.lane,0,ze,"hold");                                  // rastro sendo "comido" no anel
+      else if(n.broken || n.hit==="miss") tail(c,g,n.lane,n.broken?0:z2,ze,"dead"); // soltou cedo / errou: fica cinza
+      else if(!n.hit) tail(c,g,n.lane,z2,ze,"live");
+    }
+    if(n.hit || z2<-0.2) continue;
     var p2=proj(g,z2);
     gem(c,lx(g,n.lane+0.5,p2.s),p2.y,g.lw*0.36*p2.s,n.lane,z2>0.8?Math.max(0,(1.02-z2)/0.22):1);
   }
@@ -1076,9 +1129,9 @@ function drawStage(now){
 }
 
 function spark(l,k){
-  var g=hw(), x=lx(g,l+0.5,1), n=k==="perfect"?14:8;
+  var g=hw(), x=lx(g,l+0.5,1), n=k==="perfect"?14:k==="hold"?2:8;
   for(var i=0;i<n;i++){
-    var a=-Math.PI/2+(Math.random()-0.5)*1.6, sp=180+Math.random()*320;
+    var a=-Math.PI/2+(Math.random()-0.5)*1.6, sp=(k==="hold"?120:180)+Math.random()*320;
     G.parts.push({ x:x, y:g.hitY, vx:Math.cos(a)*sp, vy:Math.sin(a)*sp, life:0.35+Math.random()*0.3, s:3+Math.random()*4, c:Math.random()<0.3?"#fff":LANE_COLORS[l] });
   }
 }
@@ -1095,7 +1148,7 @@ function registerJudge(k, lane){
   if(World) World.react(k);
 }
 function updateHud(){
-  $("hud-score").textContent = G.score.toLocaleString("pt-BR");
+  $("hud-score").textContent = Math.floor(G.score).toLocaleString("pt-BR");
   $("hud-acc").textContent = (G.judged ? (G.accPts/G.judged*100) : 100).toFixed(2)+"%";
   var m=mult(), el=$("hud-mult"), bar=$("hud-mbar"), segs=m===4?10:G.combo%10;
   el.textContent="x"+m; el.classList.toggle("max",m===4);
@@ -1116,9 +1169,15 @@ function pressLane(l){
   if(best && bd<=WIN.ok){
     var k = bd<=WIN.perfect ? "perfect" : bd<=WIN.good ? "good" : "ok";
     best.hit=k; registerJudge(k,l);
+    if(best.end){ best.holding=true; G.holds[l]=best; G.lastNow=now; }
   } else G.flashes[l]=Math.max(G.flashes[l],0.35);
 }
-function releaseLane(l){ if(G) G.held[l]=false; }
+function releaseLane(l){
+  if(!G) return;
+  G.held[l]=false;
+  var h=G.holds[l]; if(!h || G.paused) return;
+  endHold(l, songNow() >= h.end-HOLD_GRACE);   // soltou antes do fim = rastro quebrado (não zera o combo)
+}
 
 stage.addEventListener("pointerdown", function(e){
   e.preventDefault();
@@ -1133,19 +1192,25 @@ stage.addEventListener("pointerup", pointerUp); stage.addEventListener("pointerc
 
 function pauseGame(){
   if(!G || !G.running || G.ended) return;
-  G.running=false; G.paused=true; G.audio.pause(); cancelAnimationFrame(G.raf); G.held=[false,false,false,false];
+  G.running=false; G.paused=true; G.audio.pause(); cancelAnimationFrame(G.raf);
   $("pause").classList.remove("off"); pauseMenu.set(0,true); sfx("back");
 }
 function resumeGame(){
   if(!G || !G.paused) return;
   G.paused=false; $("pause").classList.add("off"); sfx("ok");
-  G.audio.play().then(function(){ if(!G) return; G.running=true; G.lastAT=G.audio.currentTime; G.lastPerf=G.lastFrame=performance.now(); loop(); })
+  G.audio.play().then(function(){
+    if(!G) return;
+    for(var l=0;l<LANES;l++) if(G.holds[l] && !G.held[l]) endHold(l,false);   // soltou durante a pausa
+    G.running=true; G.lastAT=G.audio.currentTime; G.lastPerf=G.lastFrame=performance.now(); G.lastNow=songNow(); loop();
+  })
     .catch(function(){ if(G){ G.paused=true; $("pause").classList.remove("off"); } });
 }
 document.addEventListener("visibilitychange", function(){ if(document.hidden) pauseGame(); });
 
 function finishGame(){
   if(!G || G.ended) return; G.ended=true; G.running=false; cancelAnimationFrame(G.raf);
+  for(var l=0;l<LANES;l++) if(G.holds[l]) endHold(l,true);
+  G.score=Math.floor(G.score);
   G.notes.forEach(function(n){ if(!n.hit){ n.hit="miss"; G.counts.miss++; G.judged++; } });
   var acc = G.judged ? G.accPts/G.judged*100 : 0;
   var grade = G.counts.miss===0 && acc>=95 ? "S" : acc>=90 ? "A" : acc>=80 ? "B" : acc>=65 ? "C" : "D";
@@ -1162,7 +1227,7 @@ function finishGame(){
     '<span>pontos <b>'+G.score.toLocaleString("pt-BR")+'</b></span><span>precisão <b>'+acc.toFixed(1)+'%</b></span>'+
     '<span>perfeito <b>'+G.counts.perfect+'</b></span><span>boa <b>'+G.counts.good+'</b></span>'+
     '<span>quase <b>'+G.counts.ok+'</b></span><span>errou <b>'+G.counts.miss+'</b></span>'+
-    '<span>combo máx <b>'+G.maxCombo+'</b></span>';
+    '<span>combo máx <b>'+G.maxCombo+'</b></span>'+(G.holdTotal?'<span>notas longas <b>'+G.holdDone+'/'+G.holdTotal+'</b></span>':'');
   $("r-back").textContent = G.returnTo==="editor" ? "VOLTAR AO EDITOR" : "CONTINUAR";
   $("results").classList.remove("off");
   sfx(grade==="D"?"back":"fanfare");
@@ -1205,9 +1270,10 @@ function demoNotes(){
   var out=[];
   for(var bar=0;bar<DEMO_BARS;bar++){
     var part=demoPart(bar), base=bar*4;
-    if(part==="drums"){ for(var q=0;q<4;q++) out.push({ b:base+q, l:(bar%2?[3,2,1,0]:[0,1,2,3])[q] }); }
+    if(part==="drums" && bar<4){ for(var q=0;q<4;q++) out.push({ b:base+q, l:(bar%2?[3,2,1,0]:[0,1,2,3])[q] }); }
+    else if(part==="drums"){ out.push({ b:base, l:bar%2?3:0, d:1.5 },{ b:base+2, l:bar%2?2:1, d:1.5 }); }   // ensina a segurar
     else if(part==="A"||part==="B"){ (part==="A"?RIFF_A:RIFF_B)[bar%2].forEach(function(d,i){ if(d>=0) out.push({ b:base+i/2, l:d }); }); }
-    else if(bar===18){ out.push({ b:base, l:0 },{ b:base, l:3 }); }
+    else if(bar===18){ out.push({ b:base, l:0, d:3 },{ b:base, l:3, d:3 }); }
   }
   return out;
 }
@@ -1236,6 +1302,7 @@ function renderDemo(){
     }
     if(part==="count") continue;
     if(part!=="drums") ch.slice(0,3).forEach(function(m){ osc("triangle",mf(m-12),t0,0.035,4*spb*0.95); });
+    else if(bar>=4) [0,2].forEach(function(q2){ osc("square",mf(ch[q2?(bar%2?2:1):(bar%2?3:0)]),t0+q2*spb,0.07,spb*1.45); });   // notas longas do tutorial
     if(part==="A"||part==="B") (part==="A"?RIFF_A:RIFF_B)[bar%2].forEach(function(d,i){
       if(d<0) return; var tt=t0+i*spb/2; osc("square",mf(ch[d]),tt,0.09,spb*0.45); osc("square",mf(ch[d]),tt,0.03,spb*0.45,12);
     });
@@ -1374,6 +1441,45 @@ document.addEventListener("keydown", function(e){
 document.addEventListener("keyup", function(e){ var li=KEYS.indexOf((e.key||"").toLowerCase()); if(li!==-1) releaseLane(li); });
 
 // =====================================================================
+// CONTROLE (Gamepad API) — Xbox, PlayStation e genéricos no modo "standard"
+// no jogo:  pista 1 = LT ou ←   pista 2 = LB ou ↑   pista 3 = RB ou Y/△   pista 4 = RT ou B/○
+// nos menus: ↑↓ (ou analógico) escolhe · A/✕ confirma · B/○ volta · START pausa
+// =====================================================================
+var PAD_LANES=[[6,14],[4,12],[5,3],[7,1]];
+var PAD_MENU={12:"ArrowUp",13:"ArrowDown",0:"Enter",9:"Enter",1:"Escape",8:"Escape"};
+var pad={ prev:{}, axis:{}, raf:0 };
+function synth(type,key){ document.dispatchEvent(new KeyboardEvent(type,{key:key,bubbles:true,cancelable:true})); }
+function padButton(i,down){
+  var inSong = current==="play" && G && !G.paused && !G.ended;
+  if(inSong){
+    for(var l=0;l<LANES;l++) if(PAD_LANES[l].indexOf(i)!==-1){ synth(down?"keydown":"keyup",KEYS[l]); return; }
+    if(i===9 && down) synth("keydown","Escape");
+    return;
+  }
+  if(!down || current==="editor") return;
+  if(current==="title"){ pressStart(); return; }
+  if(current==="play" && G && G.ended){ if(i===0||i===9) synth("keydown","Enter"); else if(i===2) synth("keydown","r"); return; }
+  if(PAD_MENU[i]) synth("keydown",PAD_MENU[i]);
+}
+function padPoll(){
+  pad.raf=requestAnimationFrame(padPoll);
+  var list=navigator.getGamepads?navigator.getGamepads():[];
+  for(var p=0;p<list.length;p++){
+    var gp=list[p]; if(!gp) continue;
+    for(var i=0;i<gp.buttons.length;i++){
+      var b=gp.buttons[i], down=b.pressed||b.value>0.5, id=gp.index+":"+i;
+      if(down!==!!pad.prev[id]){ pad.prev[id]=down; padButton(i,down); }
+    }
+    // analógico esquerdo funciona como ↑↓ nos menus
+    var y=gp.axes[1]||0, dir=y<-0.6?"up":y>0.6?"down":"", aid=gp.index;
+    if(dir!==(pad.axis[aid]||"")){ pad.axis[aid]=dir; if(dir && current!=="play") synth("keydown",dir==="up"?"ArrowUp":"ArrowDown"); }
+  }
+}
+window.addEventListener("gamepadconnected", function(e){ toast("🎮 controle conectado"); if(!pad.raf) padPoll(); });
+window.addEventListener("gamepaddisconnected", function(){ toast("controle desconectado 🦇",true); });
+if(navigator.getGamepads && [].some.call(navigator.getGamepads(),Boolean)) padPoll();
+
+// =====================================================================
 // MODO ADMIN — config + editor de fases
 // =====================================================================
 function paintSettings(){
@@ -1389,7 +1495,7 @@ $("set-psx").addEventListener("change", function(){ settings.psx=this.checked; s
 var E = {
   id:null, audioFile:null, audioUrl:"", audioPath:null, notes:[], history:[],
   bpm:120, offset:0, snap:0.25, ppb:90, scroll:0, peaks:null, peaksRate:200, duration:0,
-  recording:false, lastTickBeat:null, raf:0
+  recording:false, lastTickBeat:null, raf:0, drag:null, recHeld:[null,null,null,null]
 };
 var edAudio = new Audio(); edAudio.preload="auto"; edAudio.crossOrigin="anonymous";
 var grid=$("grid"), gctx=grid.getContext("2d");
@@ -1451,6 +1557,7 @@ function drawGrid(){
   E.notes.forEach(function(n){
     var x=n.b*E.ppb-E.scroll; if(x<-30||x>w+30) return;
     var y=RULER+n.l*LANE_H;
+    if(n.d){ c.fillStyle=hexA(LANE_COLORS[n.l],0.45); c.fillRect(x,y+LANE_H/2-7,n.d*E.ppb,14); c.strokeStyle="#0A0A0A"; c.lineWidth=2; c.strokeRect(x,y+LANE_H/2-7,n.d*E.ppb,14); }
     c.fillStyle=LANE_COLORS[n.l]; roundRect(c,x-nw/2,y+8,nw,LANE_H-16,5); c.fill(); c.strokeStyle="#0A0A0A"; c.lineWidth=2; c.stroke();
   });
   for(var l3=0;l3<LANES;l3++){ c.fillStyle=LANE_COLORS[l3]; c.font="20px VT323, monospace"; c.textAlign="left"; c.fillText(KEYS[l3].toUpperCase(),6,RULER+l3*LANE_H+LANE_H/2+6); }
@@ -1473,11 +1580,29 @@ grid.addEventListener("pointerdown", function(e){
   var l=Math.floor((y-RULER)/LANE_H); if(l<0||l>=LANES) return;
   var b=snapBeat((x+E.scroll)/E.ppb), idx=findNote(b,l);
   pushHistory();
-  if(e.button===2){ if(idx!==-1) E.notes.splice(idx,1); else E.history.pop(); }
-  else if(idx!==-1) E.notes.splice(idx,1);
-  else { addNote(b,l); tick(l); }
+  if(e.button===2){ if(idx!==-1) E.notes.splice(idx,1); else E.history.pop(); drawGrid(); saveDraft(); return; }
+  var isNew=idx===-1;
+  if(isNew){ addNote(b,l); tick(l); idx=findNote(b,l); }
+  E.drag={ note:E.notes[idx], x0:x, moved:false, isNew:isNew };
+  try{ grid.setPointerCapture(e.pointerId); }catch(_){}
   drawGrid(); saveDraft();
 });
+grid.addEventListener("pointermove", function(e){
+  if(!E.drag) return;
+  var r=grid.getBoundingClientRect(), x=e.clientX-r.left, n=E.drag.note;
+  if(Math.abs(x-E.drag.x0)>4) E.drag.moved=true;
+  if(!E.drag.moved) return;
+  var d=snapBeat((x+E.scroll)/E.ppb)-n.b;
+  if(d>=0.5) n.d=Math.round(d*1e4)/1e4; else delete n.d;
+  drawGrid();
+});
+function endDrag(){
+  if(!E.drag) return;
+  var dr=E.drag; E.drag=null;
+  if(!dr.moved && !dr.isNew){ var i=E.notes.indexOf(dr.note); if(i!==-1) E.notes.splice(i,1); }   // clique simples numa nota = apaga
+  drawGrid(); saveDraft();
+}
+grid.addEventListener("pointerup", endDrag); grid.addEventListener("pointercancel", endDrag);
 grid.addEventListener("wheel", function(e){
   e.preventDefault();
   if(e.ctrlKey){
@@ -1518,9 +1643,16 @@ function editorKey(e){
   var l=KEYS.indexOf(e.key.toLowerCase());
   if(l!==-1 && E.recording && !edAudio.paused && !e.repeat){
     var b=snapBeat(timeToBeat(edAudio.currentTime - settings.latency/1000,E.bpm,E.offset));
-    pushHistory(); if(!addNote(b,l)) E.history.pop(); tick(l); drawGrid(); saveDraft();
+    pushHistory(); if(!addNote(b,l)) E.history.pop(); else E.recHeld[l]=E.notes[findNote(b,l)]; tick(l); drawGrid(); saveDraft();
   }
 }
+document.addEventListener("keyup", function(e){
+  if(current!=="editor") return;
+  var l=KEYS.indexOf((e.key||"").toLowerCase()), n=l!==-1&&E.recHeld[l]; if(!n) return;
+  E.recHeld[l]=null;
+  var d=snapBeat(timeToBeat(edAudio.currentTime - settings.latency/1000,E.bpm,E.offset))-n.b;
+  if(d>=1){ n.d=Math.round(d*1e4)/1e4; drawGrid(); saveDraft(); }   // segurou 1 tempo ou mais = nota longa
+});
 
 function setEditorAudio(src, file){
   if(E.audioUrl && E.audioUrl.indexOf("blob:")===0) URL.revokeObjectURL(E.audioUrl);
