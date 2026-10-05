@@ -195,6 +195,31 @@ input[type=file]{padding:7px}
 @keyframes rec{50%{background:var(--preto)!important;color:var(--magenta)}}
 .stat-line{font-family:var(--mono);font-size:19px;color:var(--lilas)}
 
+/* ===== JOGADOR · MOEDAS · PLACAR · LOJA ===== */
+.pchip{position:fixed;top:calc(var(--sat) + 12px);right:14px;z-index:6;display:none;cursor:pointer;font-family:var(--mono);font-size:21px;line-height:1.2;color:var(--branco);
+  background:var(--preto);border:3px solid var(--neon);box-shadow:4px 4px 0 var(--magenta-dk);padding:2px 12px}
+.pchip.on{display:block}
+.pchip b{font-weight:400;color:var(--neon)}
+.pchip i{font-style:normal;color:var(--amarelo)}
+.pchip:hover{border-color:var(--amarelo)}
+.modal{position:fixed;inset:0;z-index:70;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(10,0,14,.88)}
+.modal.on{display:flex}
+.namebox{width:min(460px,100%);text-align:center}
+.namebox .n-big{font-family:var(--display);font-size:clamp(40px,9vw,64px);line-height:1;color:var(--neon);-webkit-text-stroke:2px var(--preto);text-shadow:4px 4px 0 var(--magenta),8px 8px 0 var(--magenta-dk);transform:skew(-8deg);margin:6px 0 16px}
+.namebox input{font-family:var(--display);font-size:32px;text-align:center;letter-spacing:.06em;text-transform:uppercase;border-color:var(--neon);margin-bottom:12px}
+.board{margin:0 0 14px;font-family:var(--mono);font-size:20px}
+.board h4{margin:0 0 4px;font-family:var(--display);font-weight:400;font-size:20px;letter-spacing:.05em;color:var(--lilas)}
+.board ol{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+.board li{display:grid;grid-template-columns:2em minmax(0,1fr) auto;gap:8px;padding:0 8px;border-left:3px solid var(--magenta);background:#151515}
+.board li:nth-child(1){border-left-color:var(--amarelo)}
+.board li:nth-child(1) .p{color:var(--amarelo)}
+.board li .p{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.board li .s{color:var(--neon)}
+.board li.me{background:rgba(255,0,168,.35);border-left-color:var(--neon)}
+.board .none{color:var(--lilas)}
+.soon{display:inline-block;vertical-align:middle;margin-left:14px;font-family:var(--mono);font-size:20px;letter-spacing:.04em;color:var(--preto);-webkit-text-stroke:0;text-shadow:none;background:var(--amarelo);padding:0 8px;border:2px solid var(--preto);transform:skew(8deg)}
+.coins-line{font-family:var(--display);font-size:26px;color:var(--amarelo);-webkit-text-stroke:1px var(--preto);text-shadow:2px 2px 0 var(--magenta-dk);margin:2px 0 10px}
+
 @media (prefers-reduced-motion:reduce){
   .logo,.press,.mi.sel::before,.rec-on,.newrec,.mult b.max,.big.pop,.grade.stamp,.screen.on{animation:none}
 }
@@ -203,6 +228,18 @@ input[type=file]{padding:7px}
 <body>
 <canvas id="bg3d" aria-hidden="true"></canvas>
 <div id="vignette"></div>
+<button class="pchip" id="pchip" title="trocar nome"></button>
+<div class="modal" id="name-modal" role="dialog" aria-label="escolher nome">
+  <div class="win namebox">
+    <div class="win-bar"><span>👤 jogador.sav</span><i>×</i></div>
+    <div class="win-body">
+      <div class="muted">pra aparecer no placar das músicas</div>
+      <div class="n-big">QUAL É O TEU NOME?</div>
+      <input id="name-input" maxlength="12" autocomplete="off" spellcheck="false" placeholder="DIGITA AQUI" aria-label="nome do jogador">
+      <button class="btn" id="name-ok">BORA!</button>
+    </div>
+  </div>
+</div>
 
 <!-- ================= TÍTULO ================= -->
 <section class="screen on" id="title" aria-label="tela de título">
@@ -224,6 +261,7 @@ input[type=file]{padding:7px}
     <div class="mini-logo">CRINGE<b>HERO</b></div>
     <nav class="menu-list" id="menu-list">
       <button class="mi" data-go="select" data-desc="escolhe uma música e mostra teu cringe">JOGAR</button>
+      <button class="mi" data-go="loja" data-desc="skins pra cringe-chan, compradas com as moedas das músicas">LOJA<span class="soon">EM BREVE</span></button>
       <button class="mi" data-go="howto" data-desc="teclas, pontuação e como não passar vergonha">COMO JOGAR</button>
       <button class="mi" data-go="credits" data-desc="quem fez essa obra-prima">CRÉDITOS</button>
       <button class="mi" data-go="title" data-desc="volta pra tela de título">SAIR</button>
@@ -246,6 +284,7 @@ input[type=file]{padding:7px}
         <div class="d-artist" id="d-artist"></div>
         <div class="chips" id="d-chips"></div>
         <p class="rec-line" id="d-rec"></p>
+        <div class="board" id="d-board"></div>
         <button class="btn" id="d-play">▶ JOGAR</button>
       </div>
     </div>
@@ -334,6 +373,7 @@ input[type=file]{padding:7px}
         <div class="muted" id="r-song"></div>
         <div class="grade" id="r-grade">S</div>
         <div id="r-rec"></div>
+        <div class="coins-line" id="r-coins"></div>
         <div class="stats" id="r-stats"></div>
         <div class="row" style="justify-content:center">
           <button class="btn" id="r-again">DE NOVO</button>
@@ -461,6 +501,10 @@ try { if(configured) sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_AN
 var settings = Object.assign({ speed:2, latency:0, res:360, psx:true }, lsGet("cringehero:settings", {}));
 function saveSettings(){ lsSet("cringehero:settings", settings); }
 var records = lsGet("cringehero:records", {});
+var player = String(lsGet("cringehero:player", "")||"");
+var coins = Math.max(0, +lsGet("cringehero:coins", 0) || 0);   // moedas pra comprar skins (loja em breve)
+function addCoins(n){ coins+=n; lsSet("cringehero:coins",coins); paintChip(); }
+function cleanName(s){ return String(s||"").replace(/[\u0000-\u001f<>]/g,"").replace(/\s+/g," ").trim().slice(0,12); }
 
 // ---------- helpers de tempo ----------
 function beatToTime(beat, bpm, offsetMs){ return offsetMs/1000 + beat*60/bpm; }
@@ -496,8 +540,31 @@ function show(id){
   current = id;
   if(World){ World.setActive(id!=="editor"); World.setShot(id); }
   if(id!=="select") stopPreview();
+  paintChip();
   if(onShow[id]) onShow[id]();
 }
+
+// ---------- jogador (nome em destaque) + carteira de moedas ----------
+function paintChip(){
+  var c=$("pchip"); if(!c) return;
+  c.classList.toggle("on", !!player && (current==="menu"||current==="select"||current==="howto"||current==="credits"));
+  c.innerHTML='<b>'+esc(player)+'</b> · <i>🪙 '+coins.toLocaleString("pt-BR")+'</i>';
+}
+var nameOpen=false;
+function askName(){
+  var m=$("name-modal"), inp=$("name-input"); nameOpen=true; inp.value=player; m.classList.add("on");
+  setTimeout(function(){ inp.focus(); inp.select(); },30);
+}
+function saveName(){
+  var n=cleanName($("name-input").value);
+  if(!n){ toast("bota um nome aí 💀",true); return; }
+  player=n; lsSet("cringehero:player",player);
+  nameOpen=false; $("name-modal").classList.remove("on"); sfx("ok"); paintChip();
+  if(current==="select") renderBoard(songs[selIdx]);
+}
+$("name-ok").addEventListener("click", saveName);
+$("name-input").addEventListener("keydown", function(e){ if(e.key==="Enter"){ e.preventDefault(); saveName(); } else if(e.key==="Escape" && player){ nameOpen=false; $("name-modal").classList.remove("on"); } e.stopPropagation(); });
+$("pchip").addEventListener("click", function(e){ e.stopPropagation(); sfx("ok"); askName(); });
 
 // menu navegável por teclado/mouse/toque
 function Menu(listEl, opts){
@@ -1219,6 +1286,25 @@ function finishGame(){
     var old=records[G.key];
     if(!old || G.score>old.score){ isRec=G.score>0; records[G.key]={ score:G.score, grade:grade, acc:+acc.toFixed(1) }; lsSet("cringehero:records",records); }
   }
+  // moedas: acertos ponderados + bônus da nota (não vale testar no editor)
+  var earned=0, official=G.key && G.returnTo!=="editor";
+  if(official){
+    earned=Math.floor((G.counts.perfect + G.counts.good*0.6 + G.counts.ok*0.2)/10) + ({S:15,A:8,B:4,C:2,D:0})[grade];
+    if(earned>0) addCoins(earned);
+  }
+  $("r-coins").textContent = earned>0 ? "+"+earned+" 🪙 moedas" : "";
+  // placar da música: manda só quando bate o recorde pessoal
+  if(official && isRec && sb && player){
+    var pk=G.key, pscore=G.score, pname=player, pgrade=grade, pacc=+acc.toFixed(1);
+    sb.from("placar").insert({ fase_key:pk, player:pname, score:pscore, grade:pgrade, acc:pacc }).then(function(r){
+      if(r.error){ console.warn("placar:",r.error.message); return; }
+      delete boardCache[pk];
+      return fetchBoard(pk).then(function(rows){
+        var pos=rows.findIndex(function(x){ return x.player.toLowerCase()===pname.toLowerCase(); });
+        if(pos>=0 && G && G.key===pk && G.ended) $("r-rec").insertAdjacentHTML("beforeend",'<div class="muted">#'+(pos+1)+' no placar da música 🏆</div>');
+      });
+    });
+  }
   $("r-head").textContent = grade==="S" ? "PERFEIÇÃO CRINGE!" : grade==="D" ? "QUE CRINGE…" : "FASE COMPLETA!";
   var gr=$("r-grade"); gr.textContent=grade; gr.classList.remove("stamp"); void gr.offsetWidth; gr.classList.add("stamp");
   $("r-song").textContent=G.chart.title;
@@ -1344,6 +1430,31 @@ function songDur(s){ var last=0; s.notes.forEach(function(n){ if(n.b>last) last=
 function diffLevel(d){ var i=DIFFS.indexOf(d); return i<0?2:i+1; }
 function pad2(n){ return (n<10?"0":"")+n; }
 
+// ---------- placar por música (tabela `placar`, ver schema-placar.sql) ----------
+var boardCache={};
+function fetchBoard(key){
+  var c=boardCache[key]; if(c && Date.now()-c.t<30000) return Promise.resolve(c.rows);
+  if(!sb) return Promise.resolve([]);
+  return sb.from("placar").select("player,score,grade").eq("fase_key",key).order("score",{ascending:false}).limit(100).then(function(r){
+    if(r.error){ console.warn("placar:",r.error.message); return []; }   // tabela ainda não criada → sem placar
+    var seen={}, rows=[];
+    (r.data||[]).forEach(function(x){ var k=String(x.player).toLowerCase(); if(!seen[k]){ seen[k]=1; rows.push(x); } });   // melhor nota de cada nome
+    boardCache[key]={ t:Date.now(), rows:rows }; return rows;
+  });
+}
+function renderBoard(s){
+  var el=$("d-board"); if(!el||!s) return;
+  var key=s.key;
+  el.innerHTML='<h4>🏆 PLACAR</h4><div class="none">carregando…</div>';
+  fetchBoard(key).then(function(rows){
+    if(songs[selIdx]!==s) return;
+    var me=player.toLowerCase();
+    el.innerHTML='<h4>🏆 PLACAR</h4>'+(rows.length
+      ? '<ol>'+rows.slice(0,5).map(function(x,i){ return '<li'+(x.player.toLowerCase()===me?' class="me"':'')+'><span>'+(i+1)+'.</span><span class="p">'+esc(x.player)+'</span><span class="s">'+(+x.score).toLocaleString("pt-BR")+'</span></li>'; }).join("")+'</ol>'
+      : '<div class="none">ninguém jogou ainda — seja o primeiro 💀</div>');
+  });
+}
+
 function renderSongs(){
   var ol=$("songs");
   ol.innerHTML=songs.map(function(s,i){
@@ -1366,6 +1477,7 @@ function selectSong(i,silent){
   $("d-title").textContent=s.title; $("d-artist").textContent=s.artist||"";
   $("d-chips").innerHTML='<span class="chip">'+esc(s.difficulty||"?")+' '+sk+'</span><span class="chip"><b>'+Math.round(s.bpm)+'</b> bpm</span><span class="chip"><b>'+s.notes.length+'</b> notas</span><span class="chip">⏱ <b>'+fmtDur(songDur(s))+'</b></span>';
   $("d-rec").textContent=r ? "★ recorde: "+r.score.toLocaleString("pt-BR")+" pts · "+r.grade+" · "+r.acc+"%" : "sem recorde ainda — bora?";
+  renderBoard(s);
   schedulePreview(s);
 }
 function schedulePreview(s){ clearTimeout(prev.timer); if(prev.song===s) return; prev.timer=setTimeout(function(){ playPreview(s); },380); }
@@ -1404,11 +1516,16 @@ function pressStart(){
   if(current!=="title") return;
   var a=audioCtx(); if(a && a.state==="suspended") a.resume();
   sfx("start"); show("menu"); mainMenu.set(0,true);
+  if(!player) askName();
 }
 $("title").addEventListener("click", pressStart);
 var mainMenu=Menu($("menu-list"),{
   onChange:function(el){ $("menu-desc").textContent=el.getAttribute("data-desc"); },
-  onPick:function(el){ var go=el.getAttribute("data-go"); sfx(go==="title"?"back":"ok"); show(go); }
+  onPick:function(el){
+    var go=el.getAttribute("data-go");
+    if(go==="loja"){ sfx("back"); toast("a loja de skins chega em breve 🛍️ — vai juntando moedas!"); return; }
+    sfx(go==="title"?"back":"ok"); show(go);
+  }
 });
 var pauseMenu=Menu($("pause-list"),{
   onPick:function(el){ var p=el.getAttribute("data-p"); if(p==="resume") resumeGame(); else if(p==="restart"){ sfx("ok"); restartGame(); } else { sfx("back"); leaveGame(); } }
@@ -1418,6 +1535,7 @@ var pauseMenu=Menu($("pause-list"),{
 });
 
 document.addEventListener("keydown", function(e){
+  if(nameOpen) return;   // digitando o nome: não deixa as teclas do jogo/menu agirem
   var k=e.key||"", kl=k.toLowerCase();
   if(current==="play"){
     if(G && G.paused){ if(k==="Escape"){ e.preventDefault(); resumeGame(); } else pauseMenu.key(e); return; }

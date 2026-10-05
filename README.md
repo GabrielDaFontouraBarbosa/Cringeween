@@ -67,6 +67,18 @@ navegador). Pras fases de verdade:
 Charts prontos: [fases/misery-business.json](fases/misery-business.json)
 (Paramore, 173 bpm, 578 notas sendo 26 longas, difícil).
 
+### Nome, placar e moedas
+
+- Na primeira vez o jogo pergunta o **nome** (até 12 letras, dá pra trocar clicando no
+  nome no canto da tela). Ele aparece no **placar** de cada música, na seleção de fases.
+- Pro placar funcionar, roda o [schema-placar.sql](schema-placar.sql) no SQL Editor do
+  Supabase. Sem ele o jogo funciona normal, só não mostra placar. A pontuação só é enviada
+  quando bate o recorde pessoal do aparelho, e o placar mostra a melhor de cada nome.
+  Não tem como impedir 100% de fraude num jogo 100% no navegador; o admin pode apagar
+  linhas suspeitas na tabela `placar`.
+- Cada fase completa dá **moedas** (acertos + bônus da nota: S 15, A 8, B 4, C 2). Ficam
+  guardadas no aparelho. O botão **LOJA** (skins da cringe-chan) ainda é "em breve".
+
 ### Notas longas e controle
 
 - Nota com `"d"` no chart (duração em tempos) é **nota longa**: segura até o
