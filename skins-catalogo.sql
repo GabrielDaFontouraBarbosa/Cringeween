@@ -5,7 +5,8 @@
 -- preço em moedas: uma fase rende ~20 a 60 moedas (acertos ÷ 10 + bônus da nota).
 
 insert into public.skins (id, nome, preco) values
-  ('miku', 'Hatsune Miku', 250)
+  ('miku',   'Hatsune Miku', 250),
+  ('glitch', 'GL!TCH',       404)
 on conflict (id) do nothing;   -- não sobrescreve preço/nome que o admin já tenha mudado
 
 select id, nome, preco, ativa from public.skins order by preco;

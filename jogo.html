@@ -101,7 +101,9 @@ button{font:inherit;color:inherit}
 .chip b{font-weight:400;color:var(--neon)}
 .sk{opacity:.22;filter:grayscale(1)}.sk.on{opacity:1;filter:none}
 .rec-line{font-family:var(--mono);font-size:20px;color:var(--amarelo);margin:0 0 14px}
-@media (max-aspect-ratio:1/1){ .sel-wrap{width:100%;background:rgba(10,10,10,.82)} .songs{max-height:36vh} }
+@media (max-aspect-ratio:1/1){ .sel-wrap{width:100%;background:rgba(10,10,10,.82)} .songs{max-height:36vh}
+  #loja .sel-wrap{justify-content:flex-end;padding-top:46vh;background:linear-gradient(180deg,rgba(10,10,10,0) 0,rgba(10,10,10,0) 42vh,rgba(10,10,10,.88) 50vh)}
+  #loja .songs{max-height:none} }
 
 /* ===== JANELAS / BOTÕES ===== */
 .win{border:3px solid var(--preto);background:var(--preto);box-shadow:7px 7px 0 var(--magenta-dk),0 0 0 2px var(--neon);margin-bottom:22px}
@@ -218,10 +220,18 @@ input[type=file]{padding:7px}
 .board li.me{background:rgba(255,0,168,.35);border-left-color:var(--neon)}
 .board .none{color:var(--lilas)}
 .soon{display:inline-block;vertical-align:middle;margin-left:14px;font-family:var(--mono);font-size:20px;letter-spacing:.04em;color:var(--preto);-webkit-text-stroke:0;text-shadow:none;background:var(--amarelo);padding:0 8px;border:2px solid var(--preto);transform:skew(8deg)}
+.sw{display:block;width:38px;height:38px;border:3px solid var(--preto);box-shadow:3px 3px 0 var(--magenta-dk);image-rendering:pixelated}
+.song .price{font-family:var(--mono);font-size:21px;line-height:1;color:var(--amarelo);white-space:nowrap}
+.song .price.own{color:var(--neon)}
+.song .price.on{color:var(--preto);background:var(--neon);border:2px solid var(--preto);padding:1px 6px}
+.song .price.soon{color:var(--lilas)}
+.glitchy{position:relative;display:inline-block;animation:glitchy 1.6s steps(1) infinite}
+@keyframes glitchy{0%,100%{text-shadow:none;transform:none}8%{text-shadow:-3px 0 #ff1aa8,3px 0 #4a6cff;transform:translateX(3px)}10%{text-shadow:none;transform:none}
+  52%{text-shadow:2px 0 #3dff00,-2px 0 #fff;transform:skewX(-14deg)}55%{transform:none;text-shadow:none}81%{clip-path:inset(30% 0 40% 0);transform:translateX(-6px)}83%{clip-path:none;transform:none}}
 .coins-line{font-family:var(--display);font-size:26px;color:var(--amarelo);-webkit-text-stroke:1px var(--preto);text-shadow:2px 2px 0 var(--magenta-dk);margin:2px 0 10px}
 
 @media (prefers-reduced-motion:reduce){
-  .logo,.press,.mi.sel::before,.rec-on,.newrec,.mult b.max,.big.pop,.grade.stamp,.screen.on{animation:none}
+  .logo,.press,.mi.sel::before,.glitchy,.rec-on,.newrec,.mult b.max,.big.pop,.grade.stamp,.screen.on{animation:none}
 }
 </style>
 </head>
@@ -261,7 +271,7 @@ input[type=file]{padding:7px}
     <div class="mini-logo">CRINGE<b>HERO</b></div>
     <nav class="menu-list" id="menu-list">
       <button class="mi" data-go="select" data-desc="escolhe uma música e mostra teu cringe">JOGAR</button>
-      <button class="mi" data-go="loja" data-desc="skins pra cringe-chan, compradas com as moedas das músicas">LOJA<span class="soon">EM BREVE</span></button>
+      <button class="mi" data-go="loja" data-desc="skins pra cringe-chan, compradas com as moedas das músicas">LOJA</button>
       <button class="mi" data-go="howto" data-desc="teclas, pontuação e como não passar vergonha">COMO JOGAR</button>
       <button class="mi" data-go="credits" data-desc="quem fez essa obra-prima">CRÉDITOS</button>
       <button class="mi" data-go="title" data-desc="volta pra tela de título">SAIR</button>
@@ -290,6 +300,25 @@ input[type=file]{padding:7px}
     </div>
   </div>
   <div class="foot-hints"><b>↑↓</b> escolher · <b>ENTER</b> jogar · <b>ESC</b> voltar</div>
+</section>
+
+<!-- ================= LOJA ================= -->
+<section class="screen" id="loja" aria-label="loja de skins">
+  <div class="sel-wrap">
+    <div class="sel-head"><button class="back" data-back="menu">◄ VOLTAR</button><h2>LOJA DE SKINS</h2></div>
+    <ol class="songs" id="shop-list"></ol>
+    <div class="win">
+      <div class="win-bar"><span id="shop-file">🛍️ skin.dat</span><i>×</i></div>
+      <div class="win-body">
+        <div class="d-title" id="shop-name"></div>
+        <div class="d-artist" id="shop-desc"></div>
+        <div class="chips" id="shop-chips"></div>
+        <button class="btn" id="shop-act">COMPRAR</button>
+        <p class="hint" id="shop-hint"></p>
+      </div>
+    </div>
+  </div>
+  <div class="foot-hints"><b>↑↓</b> escolher · <b>ENTER</b> comprar / vestir · <b>ESC</b> voltar</div>
 </section>
 
 <!-- ================= COMO JOGAR ================= -->
@@ -506,6 +535,13 @@ var player = "", coins = 0;
 // skin da cringe-chan: vem do perfil (skin_atual) e fica guardada no aparelho pra abrir já vestida.
 // ?skin=miku na URL é só prévia (não salva nada) — serve pra ver a skin antes da loja existir
 var skinPreview = (location.search.match(/[?&]skin=([\w-]+)/)||[])[1] || "";
+// skins que o jogo sabe desenhar (o preço vem da tabela skins no Supabase, ver skins-catalogo.sql)
+var SKIN_INFO = {
+  cringe:{ nome:"cringe-chan", tag:"a original · grátis", desc:"a original: xadrez, tachinha, asinha de morcego e muito delineador", sw:"linear-gradient(135deg,#ff1aa8 0 50%,#3dff00 50%)" },
+  miku:{ nome:"Hatsune Miku", tag:"vocaloid · 01", desc:"maria-chiquinha até o joelho, headset, 01 no ombro e o alho-poró na mão", sw:"linear-gradient(135deg,#39c5bb 0 50%,#1c1c24 50%)" },
+  glitch:{ nome:"GL!TCH", tag:"ERR0R ▓▒░ ?????", desc:"ERRO 0x00: cringe-chan.sav corrompido. pixel quebrado, braço faltando e um bloco em ⅃ que segue ela por aí", sw:"conic-gradient(#000 0 25%,#fff 0 50%,#8a8a8a 0 75%,#ff1aa8 0) 0 0/12px 12px", glitch:true }
+};
+function wornSkin(){ return skinPreview || (profile ? profile.skin_atual : lsGet("cringehero:skin","")) || "cringe"; }
 function cleanName(s){ return String(s||"").replace(/[\u0000-\u001f<>]/g,"").replace(/\s+/g," ").trim().slice(0,12); }
 
 // ---------- helpers de tempo ----------
@@ -534,7 +570,7 @@ function sfx(kind){
 }
 
 // ---------- telas ----------
-var SCREENS = ["title","menu","select","howto","credits","play","editor"];
+var SCREENS = ["title","menu","select","loja","howto","credits","play","editor"];
 var current = "title";
 var onShow = {};
 function show(id){
@@ -542,6 +578,7 @@ function show(id){
   current = id;
   if(World){ World.setActive(id!=="editor"); World.setShot(id); }
   if(id!=="select") stopPreview();
+  if(id!=="loja" && World) World.setSkin(wornSkin());   // saiu da loja: tira a prévia e volta pra skin vestida
   paintChip();
   if(onShow[id]) onShow[id]();
 }
@@ -549,14 +586,14 @@ function show(id){
 // ---------- jogador (nome em destaque) + carteira de moedas ----------
 function paintChip(){
   var c=$("pchip"); if(!c) return;
-  c.classList.toggle("on", !!player && (current==="menu"||current==="select"||current==="howto"||current==="credits"));
+  c.classList.toggle("on", !!player && (current==="menu"||current==="select"||current==="loja"||current==="howto"||current==="credits"));
   c.innerHTML='<b>'+esc(player)+'</b> · <i>🪙 '+coins.toLocaleString("pt-BR")+'</i>';
 }
 // ---------- conta do jogador: login anônimo (uma conta por aparelho) + perfil ----------
 var profile=null, profileUid=null, profileP=null;
 function applyProfile(){
   player=profile?profile.nome:""; coins=profile?profile.moedas:0; paintChip();
-  if(profile){ lsSet("cringehero:skin", profile.skin_atual||""); if(World) World.setSkin(skinPreview||profile.skin_atual); }
+  if(profile){ lsSet("cringehero:skin", profile.skin_atual||""); if(World && current!=="loja") World.setSkin(wornSkin()); }
 }
 function loadProfile(){
   if(!sb) return Promise.resolve(null);
@@ -714,6 +751,22 @@ var World = (function(){
   TEX.mikuCollar=ctex(16,16,function(c){ c.fillStyle="#d3d8de"; c.fillRect(0,0,16,16); c.fillStyle="#39c5bb"; c.fillRect(0,0,16,4); });
   TEX.mikuSkirt=ctex(64,64,function(c){ c.fillStyle="#1c1c24"; c.fillRect(0,0,64,64); c.fillStyle="#39c5bb"; c.fillRect(0,52,64,7); c.fillStyle="#0e0e14"; c.fillRect(0,59,64,5); });
   TEX.tattoo=ctex(64,32,function(c){ c.fillStyle="#e0204a"; c.font="bold 26px Arial,sans-serif"; c.textAlign="center"; c.textBaseline="middle"; c.fillText("01",32,17); });
+  // skin glitch: lixo de memória em blocos 8x8, tipo pokémon bugado
+  function rng(seed){ return function(){ seed=(seed*1103515245+12345)&0x7fffffff; return seed/0x7fffffff; }; }
+  function junk(seed,w,h,pal,rep){
+    return ctex(w,h,function(c){
+      var r=rng(seed), pk=function(){ return pal[Math.floor(r()*pal.length)]; };
+      for(var y=0;y<h;y+=8) for(var x=0;x<w;x+=8){
+        var kind=r(); c.fillStyle=pk(); c.fillRect(x,y,8,8);
+        if(kind<0.35){ c.fillStyle=pk(); for(var i=0;i<8;i+=2) c.fillRect(x,y+i,8,1); }
+        else if(kind<0.6){ for(var p=0;p<10;p++){ c.fillStyle=pk(); c.fillRect(x+Math.floor(r()*8),y+Math.floor(r()*8),1+Math.floor(r()*3),1); } }
+      }
+    },rep||[1,1],true);
+  }
+  var GPAL=["#000","#fff","#9a9a9a","#d0d0d0","#3c3c3c","#000","#fff"];
+  TEX.junkA=junk(7,64,64,GPAL.concat(["#ff1aa8"]),[2,1]);
+  TEX.junkB=junk(23,64,64,GPAL.concat(["#4a6cff","#3dff00"]),[2,1]);
+  TEX.junkC=junk(91,32,32,["#000","#fff","#888","#000","#222"]);
   TEX.checker=ctex(64,64,function(c){ c.fillStyle="#1a0a22"; c.fillRect(0,0,64,64); c.fillStyle="#7a005a"; c.fillRect(0,0,32,32); c.fillRect(32,32,32,32); c.strokeStyle="rgba(255,0,168,.6)"; c.strokeRect(.5,.5,63,63); },[8,8],true);
   TEX.grid=ctex(64,64,function(c){ c.fillStyle="#0c0010"; c.fillRect(0,0,64,64); c.fillStyle="#7a1a9a"; c.fillRect(0,0,64,2); c.fillRect(0,0,2,64); },[60,60]);
   TEX.moon=ctex(128,128,function(c){
@@ -741,8 +794,17 @@ var World = (function(){
 
   // rosto anime: a frente da esfera fica em u=0.25 → x=128 no canvas 512
   // íris por skin: [escuro, meio, claro, contorno, pupila]
-  var IRIS={ cringe:["#0a3300","#27b800","#c4ff94","#062200","#051400"], miku:["#00302e","#13a89f","#b6fff5","#002220","#001514"] };
-  function faceTex(kind,I){
+  var IRIS={ cringe:["#0a3300","#27b800","#c4ff94","#062200","#051400"], miku:["#00302e","#13a89f","#b6fff5","#002220","#001514"],
+             glitch:["#000","#262626","#8a8a8a","#000","#fff"] };
+  // rosto corrompido: fatias deslocadas na horizontal + blocos de pixel morto (cada expressão com um defeito diferente)
+  function glitchFx(seed){
+    return function(c,w){
+      var r=rng(seed);
+      for(var i=0;i<8;i++){ var y=Math.floor(70+r()*150), hh=2+Math.floor(r()*12), dx=Math.round((r()-0.5)*44); c.drawImage(c.canvas,0,y,w,hh,dx,y,w,hh); }
+      for(var j=0;j<9;j++){ c.fillStyle=["#000","#fff","#8a8a8a","#ff1aa8","#000"][Math.floor(r()*5)]; c.fillRect(64+Math.floor(r()*16)*8,88+Math.floor(r()*14)*8,8,8); }
+    };
+  }
+  function faceTex(kind,I,fx){
     return ctex(512,256,function(c){
       var g=c.createLinearGradient(0,0,0,256); g.addColorStop(0,"#ffd9c9"); g.addColorStop(.6,"#ffe6da"); g.addColorStop(1,"#f6c9b8");
       c.fillStyle=g; c.fillRect(0,0,512,256);
@@ -786,27 +848,57 @@ var World = (function(){
         c.beginPath(); c.moveTo(cx-8,my); c.quadraticCurveTo(cx,my+5,cx+8,my); c.stroke();
         c.fillStyle="#fff"; c.beginPath(); c.moveTo(cx+2,my+1.5); c.lineTo(cx+6,my+1); c.lineTo(cx+4,my+5); c.fill();
       }
+      if(fx) fx(c,512,256);
     });
   }
   var FACES={};
-  function faces(id){ var I=IRIS[id]||IRIS.cringe; return FACES[id]||(FACES[id]={ open:faceTex("open",I), blink:faceTex("blink",I), happy:faceTex("happy",I), sad:faceTex("sad",I) }); }
+  function faces(id){
+    if(FACES[id]) return FACES[id];
+    var I=IRIS[id]||IRIS.cringe, F={};
+    ["open","blink","happy","sad"].forEach(function(k,i){ F[k]=faceTex(k,I,id==="glitch"?glitchFx(31+i*17):null); });
+    return (FACES[id]=F);
+  }
 
   // ---------- a cringe-chan ----------
   // toda skin monta o mesmo esqueleto (P.legs, P.hips, P.spine, P.arms, P.head, P.tails...),
   // então a dança e as reações servem pra todas. Skin nova = entra em SKINS + um "if" nas peças.
-  var SKINS={ cringe:"cringe-chan", miku:"Hatsune Miku" };
+  var SKINS=SKIN_INFO;
+  // falhas da skin glitch: de vez em quando uma parte do corpo pula, estica ou some por alguns frames,
+  // a textura de lixo "rola" em blocos e o rosto pisca outra expressão
+  function glitchTick(P,GJ,t,dt){
+    var R=Math.random;
+    if(GJ.ev>0){
+      GJ.ev-=dt;
+      if(GJ.ev<=0) GJ.parts.forEach(function(j){ j.o.position.copy(j.p); j.o.scale.copy(j.s); j.o.visible=true; });
+    } else if(R()<dt*(2.5+3*st.hype)){
+      GJ.ev=0.04+R()*0.12;
+      for(var n=1+Math.floor(R()*3);n>0;n--){
+        var j=GJ.parts[Math.floor(R()*GJ.parts.length)], k=R();
+        if(k<0.6) j.o.position.set(j.p.x+(R()-0.5)*0.3,j.p.y+(R()-0.5)*0.1,j.p.z);
+        else if(k<0.9) j.o.scale.set(j.s.x*(1+R()*0.8),j.s.y*(0.4+R()*0.6),j.s.z);
+        else j.o.visible=false;
+      }
+      [TEX.junkA,TEX.junkB,TEX.junkC].forEach(function(tx){ if(R()<0.6) tx.offset.set(Math.floor(R()*8)/8,Math.floor(R()*8)/8); });
+      if(R()<0.4){ var ks=["open","blink","happy","sad"]; P.face.map=P.faces[ks[Math.floor(R()*4)]]; }
+    }
+    if(R()<dt*12){ var c=GJ.cubes[Math.floor(R()*GJ.cubes.length)]; if(GJ.mats.length) c.material=GJ.mats[Math.floor(R()*GJ.mats.length)]; c.visible=R()>0.15; }
+    var L=GJ.L; L.position.y=1.5+Math.sin(t*1.6)*0.09; L.rotation.y=-0.5+Math.sin(t*0.7)*0.35;
+    L.position.x=1.15+(R()<0.04?(R()-0.5)*0.4:0); L.visible=R()>0.03;
+  }
   function buildGirl(skin){
-    var miku=skin==="miku";
-    var SKIN=toon(0xffd6c4,null,true), BLACK=toon(0x1c1420), BOOT=toon(0x18101c), STUD=toon(0xe8e8f0),
-        NEON=toon(0x3dff00,{emissive:0x0f4a00}), PINK=toon(0xff1aa8,{emissive:0x2a0018}), GOLD=toon(0xffe600,{emissive:0x403800}),
+    var miku=skin==="miku", glitch=skin==="glitch";
+    function V(a,m,g){ return miku?m:glitch?g:a; }   // valor por skin: cringe, miku, glitch
+    var JUNK=glitch?toon(0xffffff,{map:TEX.junkA,side:T.DoubleSide}):null, JUNK2=glitch?toon(0xffffff,{map:TEX.junkB}):null, JUNK3=glitch?toon(0xffffff,{map:TEX.junkC}):null;
+    var SKIN=toon(V(0xffd6c4,0xffd6c4,0xe4dde8),null,true), BLACK=toon(0x1c1420), BOOT=toon(0x18101c), STUD=toon(0xe8e8f0),
+        NEON=glitch?JUNK2:toon(0x3dff00,{emissive:0x0f4a00}), PINK=toon(0xff1aa8,{emissive:0x2a0018}), GOLD=toon(0xffe600,{emissive:0x403800}),
         TEAL=toon(0x39c5bb,{emissive:0x06302c}),
-        HAIR=toon(miku?0x2fbcb2:0x2a1434), HAIRP=toon(miku?0x1a9890:0xff1aa8),
-        HAIRT=toon(0xffffff,{map:miku?TEX.mikuHair:TEX.hair}), HAIRB=toon(0xffffff,{map:miku?TEX.mikuHair:TEX.hair,side:T.DoubleSide}),
-        TART=toon(0xffffff,{map:miku?TEX.mikuSkirt:TEX.tartan,side:T.DoubleSide}), STRIPE=toon(0xffffff,{map:TEX.stripes}),
-        SHIRT=toon(0xffffff,{map:miku?TEX.mikuShirt:TEX.shirt}),
-        JACK=toon(0x241b2e,{side:T.DoubleSide}), TAILM=toon(0xffffff,{map:miku?TEX.mikuTail:TEX.tail}), WING=toon(0x2e0c40,{side:T.DoubleSide});
+        HAIR=toon(V(0x2a1434,0x2fbcb2,0x161616)), HAIRP=glitch?JUNK3:toon(V(0xff1aa8,0x1a9890)),
+        HAIRT=toon(0xffffff,{map:V(TEX.hair,TEX.mikuHair,TEX.junkC)}), HAIRB=toon(0xffffff,{map:V(TEX.hair,TEX.mikuHair,TEX.junkC),side:T.DoubleSide}),
+        TART=toon(0xffffff,{map:V(TEX.tartan,TEX.mikuSkirt,TEX.junkA),side:T.DoubleSide}), STRIPE=glitch?JUNK3:toon(0xffffff,{map:TEX.stripes}),
+        SHIRT=toon(0xffffff,{map:V(TEX.shirt,TEX.mikuShirt,TEX.junkB)}),
+        JACK=glitch?JUNK:toon(0x241b2e,{side:T.DoubleSide}), TAILM=toon(0xffffff,{map:miku?TEX.mikuTail:TEX.tail}), WING=toon(0x2e0c40,{side:T.DoubleSide});
     var F=faces(skin), FACE=toon(0xffffff,{map:F.open},true);
-    var root=new T.Group(), P={ root:root, face:FACE, faces:F };
+    var root=new T.Group(), P={ root:root, face:FACE, faces:F }, GJ={ parts:[], cubes:[], mats:[], ev:0, L:null };
 
     function lathe(pts,dr,y0,phiS,phiL,seg){
       var v=[]; pts.forEach(function(p){ if(p[1]>=y0-1e-6) v.push(new T.Vector2(p[0]+dr,p[1])); });
@@ -882,7 +974,7 @@ var World = (function(){
       var ws=new T.Shape(); ws.moveTo(0,0); ws.quadraticCurveTo(0.22,0.36,0.6,0.4); ws.quadraticCurveTo(0.55,0.24,0.64,0.1); ws.quadraticCurveTo(0.5,0.12,0.45,-0.04);
       ws.quadraticCurveTo(0.34,0.04,0.27,-0.14); ws.quadraticCurveTo(0.16,-0.02,0,-0.08); ws.lineTo(0,0);
       var wgeo=new T.ExtrudeGeometry(ws,{depth:0.015,bevelEnabled:false});
-      [-1,1].forEach(function(s){ var w=new T.Group(); w.position.set(0.06*s,0.42,-0.19); spine.add(w); mk(wgeo,WING,w,0,0,0).scale.x=s; P.wings.push(w); });
+      if(!glitch) [-1,1].forEach(function(s){ var w=new T.Group(); w.position.set(0.06*s,0.42,-0.19); spine.add(w); mk(wgeo,WING,w,0,0,0).scale.x=s; P.wings.push(w); });
     }
 
     // braços com cotovelo
@@ -909,13 +1001,16 @@ var World = (function(){
           var LEEK=toon(0x3fae2a);
           for(var li=0;li<3;li++){ var lf=mk(new T.ConeGeometry(0.03,0.36,5),LEEK,leek,(li-1)*0.022,0.42,0,true); lf.rotation.z=-(li-1)*0.22; lf.scale.z=0.5; }
         }
+      } else if(glitch && s>0){
+        // antebraço "faltando": no lugar, uma pilha de blocos desalinhados
+        for(var gb=0;gb<3;gb++) mk(new T.BoxGeometry(0.1-gb*0.012,0.1,0.1-gb*0.012),[JUNK,JUNK2,JUNK3][gb],el,[0.02,-0.03,0.035][gb],-0.07-gb*0.115,[0,0.02,-0.02][gb],true);
       } else {
         mk(new T.TorusGeometry(0.08,0.022,6,12),JACK,arm,0,-0.33,0).rotation.x=Math.PI/2;
         mk(new T.CylinderGeometry(0.058,0.047,0.33,10),SKIN,el,0,-0.16,0,true);
         mk(new T.CylinderGeometry(0.064,0.064,0.07,10),s<0?NEON:PINK,el,0,-0.27,0,true);
         for(var i=0;i<4;i++){ var a=i/4*TAU+0.4, c=mk(new T.ConeGeometry(0.018,0.05,4),STUD,el,Math.sin(a)*0.075,-0.27,Math.cos(a)*0.075); c.rotation.order="YXZ"; c.rotation.set(Math.PI/2,a,0); }
       }
-      mk(new T.SphereGeometry(0.068,10,8),SKIN,el,0,-0.37,0.01,true).scale.set(0.85,1.15,0.7);
+      if(!(glitch && s>0)) mk(new T.SphereGeometry(0.068,10,8),SKIN,el,0,-0.37,0.01,true).scale.set(0.85,1.15,0.7);
       arm.rotation.z=0.14*s; el.rotation.x=-0.25;
       P.arms.push(arm); P.elbows.push(el);
     });
@@ -949,7 +1044,11 @@ var World = (function(){
     var tgeo=new T.LatheGeometry(tp,14);
     [-1,1].forEach(function(s){
       var tl=new T.Group(); tl.position.set(0.44*s,HC+0.22,-0.1); head.add(tl);
-      if(miku){
+      if(glitch){
+        // maria-chiquinha de blocos: cada um some/pula sozinho no tick
+        mk(new T.TorusGeometry(0.075,0.03,6,12),NEON,tl,0.06*s,-0.06,0).rotation.x=Math.PI/2;
+        for(var tb=0;tb<6;tb++){ var bs=0.2-tb*0.022; GJ.cubes.push(mk(new T.BoxGeometry(bs,0.13,bs),[JUNK,JUNK2,JUNK3][(tb+(s>0?1:0))%3],tl,0.06*s+((tb*37)%5-2)*0.02,-0.1-tb*0.14,0,true)); }
+      } else if(miku){
         mk(new T.BoxGeometry(0.1,0.17,0.17),BLACK,tl,0.06*s,-0.02,0,true);
         mk(new T.BoxGeometry(0.104,0.025,0.174),PINK,tl,0.06*s,0.025,0);
         mk(new T.BoxGeometry(0.104,0.025,0.174),PINK,tl,0.06*s,-0.065,0);
@@ -969,6 +1068,15 @@ var World = (function(){
       });
       rod(0.011,new T.Vector3(-0.52,HC-0.08,0.07),new T.Vector3(-0.16,HC-0.26,0.36),BLACK,head);
       mk(new T.SphereGeometry(0.03,8,6),TEAL,head,-0.16,HC-0.26,0.36,true);
+    } else if(glitch){
+      // o bloco em ⅃ que flutua do lado dela (a silhueta do pokémon bugado), feito de blocos de lixo
+      var pool=[TEX.junkA,TEX.junkB,TEX.junkC];
+      for(var mi=0;mi<6;mi++){ var tx=pool[mi%3].clone(); tx.needsUpdate=true; tx.offset.set((mi*3%8)/8,(mi*5%8)/8); GJ.mats.push(toon(0xffffff,{map:tx})); }
+      var Lb=new T.Group(); Lb.position.set(1.15,1.5,-0.35); root.add(Lb); GJ.L=Lb;
+      var cg=new T.BoxGeometry(0.13,0.13,0.13);
+      for(var cy=0;cy<7;cy++) for(var cx=0;cx<3;cx++){ if(cx===0 && cy>1) continue; GJ.cubes.push(mk(cg,GJ.mats[(cx*7+cy*3)%6],Lb,(cx-1)*0.135,cy*0.135,0)); }
+      GJ.parts=[P.head,P.hips,spine].concat(P.legs,P.tails).map(function(o){ return { o:o, p:o.position.clone(), s:o.scale.clone() }; });
+      P.tick=function(t,dt){ glitchTick(P,GJ,t,dt); }; P.own=GJ.mats;
     } else {
       // presilha de estrela
       var ss=new T.Shape(); for(var si=0;si<10;si++){ var rr=si%2?0.04:0.09, aa=si/10*TAU+Math.PI/2; ss[si?"lineTo":"moveTo"](Math.cos(aa)*rr,Math.sin(aa)*rr); }
@@ -1028,6 +1136,7 @@ var World = (function(){
     id=SKINS[id]?id:"cringe"; if(id===skinId) return;
     scene.remove(P.root);
     P.root.traverse(function(o){ if(o.geometry) o.geometry.dispose(); if(o.material && o.material!==OUT) o.material.dispose(); });
+    (P.own||[]).forEach(function(m){ m.map.dispose(); m.dispose(); });
     skinId=id; P=buildGirl(id); scene.add(P.root);
   }
   var env=buildStage();
@@ -1037,8 +1146,8 @@ var World = (function(){
   function shotFor(name){
     var wide=cam.aspect>1.05, S;
     if(wide) S={ title:[-0.4,1.7,8.2,-1.75,2.05,0], menu:[2.2,1.6,7.6,-1.25,1.95,0], select:[-1,1.8,7.4,-2,1.95,0],
-                 howto:[3,1.4,8.4,-2.4,2,0], credits:[-3,1.5,8.4,-2.6,2,0], play:[0.4,2.1,9.2,2.9,1.95,0] }[name];
-    else S={ title:[0,2.3,11.5,0,2.8,0], play:[0,2.4,10,0,2.3,0] }[name] || [0,2.2,11,0,1.3,0];
+                 howto:[3,1.4,8.4,-2.4,2,0], loja:[-0.9,1.7,6.4,-1.7,1.85,0], credits:[-3,1.5,8.4,-2.6,2,0], play:[0.4,2.1,9.2,2.9,1.95,0] }[name];
+    else S={ title:[0,2.3,11.5,0,2.8,0], play:[0,2.4,10,0,2.3,0], loja:[0,2.2,14.5,0,-0.05,0] }[name] || [0,2.2,11,0,1.3,0];
     S=S||[0,2,9,0,2,0];
     tgtP.set(S[0],S[1],S[2]); tgtL.set(S[3],S[4],S[5]);
   }
@@ -1073,6 +1182,7 @@ var World = (function(){
     var blink=(t%3.6)<0.13;
     var face=st.sad>0.25?"sad":(st.cheer>0||(h>0.75&&bounce>0.6))?"happy":blink?"blink":"open";
     if(P.face.map!==P.faces[face]) P.face.map=P.faces[face];
+    if(P.tick) P.tick(t,dt);
 
     env.beams.forEach(function(b,i){ b.rotation.z=Math.sin(t*0.6+i*2.1)*0.35; b.rotation.x=Math.sin(t*0.45+i)*0.2; b.children[0].material.opacity=0.06+0.07*bounce*(0.4+h); });
     var pa=env.pts.geometry.attributes.position;
@@ -1639,6 +1749,88 @@ $("d-play").addEventListener("click", playSelected);
 onShow.select=function(){ buildSongs(); renderSongs(); };
 
 // =====================================================================
+// LOJA — skins da cringe-chan. O catálogo (nome/preço) vem da tabela skins; comprar e vestir
+// passam pelas funções comprar_skin / usar_skin, que conferem moedas e posse no servidor.
+// Skin que o jogo desenha mas não está no catálogo aparece como "em breve" (dá pra ver, não comprar).
+// =====================================================================
+var shop={ items:[], idx:0, selId:"", busy:false, confirm:null, catalogOk:false };
+function shopFind(id){ return Math.max(0,shop.items.map(function(x){ return x.id; }).indexOf(id)); }
+function shopOwned(id){ return id==="cringe" || !!(profile && profile.skins && profile.skins.indexOf(id)!==-1); }
+function shopWorn(id){ return ((profile && profile.skin_atual) || "cringe")===id; }
+function loadShop(){
+  shop.confirm=null;
+  var cat = sb ? sb.from("skins").select("id,nome,preco").eq("ativa",true).order("preco").then(function(r){ if(r.error) throw r.error; return r.data||[]; }) : Promise.reject(new Error("sem supabase"));
+  return Promise.all([loadProfile(), cat.then(function(d){ shop.catalogOk=true; return d; }, function(e){ console.warn("loja:",e&&e.message); shop.catalogOk=false; return []; })])
+    .then(function(res){
+      var rows=res[1], seen={ cringe:true };
+      shop.items=[{ id:"cringe", nome:SKIN_INFO.cringe.nome, preco:0 }];
+      rows.forEach(function(r){ if(SKIN_INFO[r.id] && !seen[r.id]){ seen[r.id]=true; shop.items.push({ id:r.id, nome:r.nome||SKIN_INFO[r.id].nome, preco:r.preco }); } });
+      Object.keys(SKIN_INFO).forEach(function(id){ if(!seen[id]) shop.items.push({ id:id, nome:SKIN_INFO[id].nome, preco:null }); });
+    });
+}
+function shopPrice(it){
+  if(shopWorn(it.id)) return '<span class="price on">VESTINDO</span>';
+  if(shopOwned(it.id)) return '<span class="price own">✔ TENHO</span>';
+  if(it.preco==null) return '<span class="price soon">EM BREVE</span>';
+  return '<span class="price">🪙 '+it.preco.toLocaleString("pt-BR")+'</span>';
+}
+function renderShop(){
+  $("shop-list").innerHTML = shop.items.map(function(it,i){
+    var info=SKIN_INFO[it.id];
+    return '<li class="song" data-i="'+i+'"><span class="sw" style="background:'+info.sw+'"></span><span><div class="t">'+(info.glitch?'<span class="glitchy">'+esc(it.nome)+'</span>':esc(it.nome))+'</div><div class="a">'+esc(info.tag)+'</div></span>'+shopPrice(it)+'</li>';
+  }).join("");
+  selectShop(shop.idx,true);
+}
+function selectShop(i,silent){
+  if(!shop.items.length) return;
+  i=(i+shop.items.length)%shop.items.length; if(i!==shop.idx && !silent) sfx("move");
+  if(i!==shop.idx) shop.confirm=null;
+  shop.idx=i; shop.selId=shop.items[i].id;
+  var lis=$("shop-list").querySelectorAll(".song[data-i]");
+  for(var j=0;j<lis.length;j++) lis[j].classList.toggle("sel",j===i);
+  if(lis[i]) lis[i].scrollIntoView({block:"nearest"});
+  var it=shop.items[i], info=SKIN_INFO[it.id], btn=$("shop-act"), hint="", label, can=false;
+  if(World) World.setSkin(it.id);   // prévia ao vivo na boneca
+  $("shop-file").textContent="🛍️ "+it.id+(info.glitch?".s̷a̷v̷":".skin");
+  $("shop-name").innerHTML=info.glitch?'<span class="glitchy">'+esc(it.nome)+'</span>':esc(it.nome);
+  $("shop-desc").textContent=info.desc;
+  $("shop-chips").innerHTML=it.preco==null?'<span class="chip">fora do catálogo</span>'
+    :'<span class="chip">preço <b>'+(it.preco?"🪙 "+it.preco.toLocaleString("pt-BR"):"grátis")+'</b></span>'+(profile?'<span class="chip">você tem <b>🪙 '+coins.toLocaleString("pt-BR")+'</b></span>':"");
+  if(shopWorn(it.id)){ label="✔ VESTINDO"; hint="é essa que tá dançando nas fases."; }
+  else if(shopOwned(it.id)){ label="VESTIR"; can=!!profile || it.id==="cringe"; if(!profile) hint="precisa da conta online pra trocar de skin."; }
+  else if(it.preco==null){ label="EM BREVE"; hint=shop.catalogOk?"o DJ ainda não colocou essa à venda. olha só a prévia aí 👀":"sem conexão com a loja agora 🦇"; }
+  else if(!profile){ label="COMPRAR"; hint=sb?"escolhe um nome primeiro pra ter carteira de moedas.":"a loja precisa do supabase ligado 🦇"; }
+  else if(coins<it.preco){ label="FALTAM 🪙 "+(it.preco-coins).toLocaleString("pt-BR"); hint="joga mais umas fases: acertos ÷ 10 + bônus da nota."; }
+  else if(shop.confirm===it.id){ label="CONFIRMAR? 🪙 "+it.preco.toLocaleString("pt-BR"); can=true; hint="aperta de novo pra comprar."; }
+  else { label="COMPRAR · 🪙 "+it.preco.toLocaleString("pt-BR"); can=true; }
+  if(shop.busy){ label="AGUARDA…"; can=false; }
+  btn.textContent=label; btn.disabled=!can; btn.classList.toggle("pink",shop.confirm===it.id);
+  $("shop-hint").textContent=hint;
+}
+function shopRpc(fn,args){
+  return sb.rpc(fn,args).then(function(r){ if(r.error) throw new Error(r.error.message); profile=r.data; applyProfile(); return r.data; });
+}
+function shopAction(){
+  var it=shop.items[shop.idx]; if(!it || shop.busy || $("shop-act").disabled) return;
+  if(!profile){ if(sb && profileUid) askName(); return; }
+  var wear=shopOwned(it.id);
+  if(!wear && shop.confirm!==it.id){ sfx("ok"); shop.confirm=it.id; selectShop(shop.idx,true); return; }
+  shop.busy=true; shop.confirm=null; selectShop(shop.idx,true);
+  var p = wear ? shopRpc("usar_skin",{ p_skin:it.id==="cringe"?null:it.id })
+               : shopRpc("comprar_skin",{ p_skin:it.id }).then(function(){ return shopRpc("usar_skin",{ p_skin:it.id }); });
+  p.then(function(){ sfx("start"); toast(wear?"vestiu "+it.nome+" 💅":"comprou e vestiu "+it.nome+"! 🛍️"); })
+   .catch(function(e){ sfx("back"); toast(e.message||"deu ruim na loja 🦇",true); })
+   .then(function(){ shop.busy=false; if(current==="loja") renderShop(); });
+}
+$("shop-list").addEventListener("click", function(e){ var li=e.target.closest(".song[data-i]"); if(!li) return; var i=+li.getAttribute("data-i"); if(i===shop.idx) shopAction(); else selectShop(i); });
+$("shop-act").addEventListener("click", shopAction);
+onShow.loja=function(){
+  if(!shop.items.length) shop.items=Object.keys(SKIN_INFO).map(function(id){ return { id:id, nome:SKIN_INFO[id].nome, preco:null }; });
+  shop.idx=shopFind(wornSkin()); renderShop();
+  loadShop().then(function(){ if(current==="loja"){ shop.idx=shopFind(shop.selId); renderShop(); } });
+};
+
+// =====================================================================
 // TÍTULO + MENUS
 // =====================================================================
 function pressStart(){
@@ -1652,7 +1844,6 @@ var mainMenu=Menu($("menu-list"),{
   onChange:function(el){ $("menu-desc").textContent=el.getAttribute("data-desc"); },
   onPick:function(el){
     var go=el.getAttribute("data-go");
-    if(go==="loja"){ sfx("back"); toast("a loja de skins chega em breve 🛍️ — vai juntando moedas!"); return; }
     sfx(go==="title"?"back":"ok"); show(go);
   }
 });
@@ -1680,6 +1871,13 @@ document.addEventListener("keydown", function(e){
     if(k==="ArrowDown"){ e.preventDefault(); selectSong(selIdx+1); }
     else if(k==="ArrowUp"){ e.preventDefault(); selectSong(selIdx-1); }
     else if(k==="Enter"||k===" "){ e.preventDefault(); playSelected(); }
+    else if(k==="Escape"||k==="Backspace"){ sfx("back"); show("menu"); }
+    return;
+  }
+  if(current==="loja"){
+    if(k==="ArrowDown"){ e.preventDefault(); selectShop(shop.idx+1); }
+    else if(k==="ArrowUp"){ e.preventDefault(); selectShop(shop.idx-1); }
+    else if(k==="Enter"||k===" "){ e.preventDefault(); shopAction(); }
     else if(k==="Escape"||k==="Backspace"){ sfx("back"); show("menu"); }
     return;
   }
