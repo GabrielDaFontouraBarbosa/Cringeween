@@ -81,6 +81,12 @@ In the End, Scary Monsters And Nice Sprites e Alone (médio).
 - Moedas por fase: acertos ÷ 10 + bônus da nota (S 15, A 8, B 4, C 2).
 - A **LOJA** ainda é "em breve", mas o banco já tem o catálogo `skins` e as funções
   `comprar_skin` / `usar_skin`.
+- **Skins da cringe-chan**: a primeira é a `miku` (Hatsune Miku — cabelo turquesa com as
+  maria-chiquinhas até o joelho, headset, gravata, mangas soltas, "01" no ombro e o
+  alho-poró na mão). Ela é montada em código no `jogo.html` (`buildGirl`, lista `SKINS`) e
+  o jogo veste a skin que estiver em `perfis.skin_atual`. Pra cadastrar no catálogo da loja,
+  rode o `skins-catalogo.sql`. Pra ver antes da loja existir: abra `jogo.html?skin=miku`
+  (é só prévia, não salva nada).
 - Limite: a conta anônima é do navegador. Limpou os dados do site ou trocou de aparelho,
   vira outro jogador. E num jogo que roda no navegador sempre dá pra forjar uma partida
   *plausível*; o servidor só barra as impossíveis. O admin pode apagar linhas da `placar`.
