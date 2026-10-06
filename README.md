@@ -79,8 +79,18 @@ In the End, Scary Monsters And Nice Sprites e Alone (médio).
   que confere a partida contra o chart (número de notas, pontuação máxima possível,
   tempo mínimo entre partidas), calcula a nota e as moedas e atualiza o placar.
 - Moedas por fase: acertos ÷ 10 + bônus da nota (S 15, A 8, B 4, C 2).
-- A **LOJA** ainda é "em breve", mas o banco já tem o catálogo `skins` e as funções
-  `comprar_skin` / `usar_skin`.
+- **LOJA**: lista as skins da cringe-chan, mostra a prévia ao vivo na boneca e compra
+  (com confirmação) e veste pelas funções `comprar_skin` / `usar_skin`, que conferem moedas
+  e posse no servidor. Comprou, já veste. A cringe-chan original é grátis e sempre dá pra voltar.
+- **Skins**: `miku` (Hatsune Miku: maria-chiquinhas até o joelho, headset, gravata, mangas
+  soltas, "01" no ombro e o alho-poró na mão) e `glitch` (inspirada nos pokémon bugados:
+  roupa de lixo de memória em blocos, rosto corrompido, braço faltando, maria-chiquinhas de
+  blocos e um bloco em ⅃ flutuando do lado; partes do corpo pulam e somem sozinhas).
+  Elas são montadas em código no `jogo.html` (`buildGirl` + a lista `SKIN_INFO`, que tem nome
+  e descrição pra loja). O **preço** vem da tabela `skins`: rode o `skins-catalogo.sql`
+  (miku 250, glitch 404). Skin que o jogo desenha mas não está no catálogo aparece como
+  "em breve" na loja (dá pra ver a prévia, não comprar).
+- Pra ver uma skin sem comprar: `jogo.html?skin=glitch` (só prévia, não salva nada).
 - Limite: a conta anônima é do navegador. Limpou os dados do site ou trocou de aparelho,
   vira outro jogador. E num jogo que roda no navegador sempre dá pra forjar uma partida
   *plausível*; o servidor só barra as impossíveis. O admin pode apagar linhas da `placar`.
